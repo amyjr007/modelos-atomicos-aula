@@ -545,6 +545,62 @@ body.in-chapter .help-btn{display:grid}
 /* versão do app (canto inferior esquerdo) */
 .app-version{position:fixed;left:13px;bottom:10px;z-index:60;pointer-events:none;
   font-family:var(--ff-mono);font-size:11px;letter-spacing:1px;color:var(--ink-mute);opacity:.6}
+
+/* ============================================================
+   POPUPS (modais) — Resumo (quadro) e Quiz
+   ============================================================ */
+.modal{position:fixed;inset:0;z-index:80;display:none;align-items:center;justify-content:center;padding:20px;
+  background:rgba(3,5,12,.82)}                 /* escurece atrás (sem backdrop-filter p/ evitar flicker) */
+.modal.open{display:flex;animation:modalIn .3s var(--ease)}
+@keyframes modalIn{from{opacity:0}to{opacity:1}}
+.modal-card{position:relative;width:min(660px,94vw);max-height:88vh;overflow:auto;border-radius:18px;
+  animation:cardPop .34s var(--ease);box-shadow:0 30px 80px rgba(0,0,0,.6)}
+@keyframes cardPop{from{transform:scale(.92);opacity:0}to{transform:scale(1);opacity:1}}
+.modal-close{position:absolute;top:12px;right:12px;z-index:3;width:38px;height:38px;border-radius:50%;
+  border:1px solid rgba(255,255,255,.25);background:rgba(0,0,0,.32);color:#fff;font-size:16px;cursor:pointer;
+  display:grid;place-items:center}
+.modal-close:active{transform:scale(.92)}
+
+/* --- RESUMO: quadro (chalkboard) com moldura --- */
+.board{background:linear-gradient(160deg,#173a2d,#0e2219);border:11px solid #6e4a29;
+  box-shadow:0 30px 80px rgba(0,0,0,.6),inset 0 0 70px rgba(0,0,0,.5),inset 0 0 0 2px rgba(0,0,0,.3)}
+.board-inner{padding:clamp(22px,4.5vw,42px) clamp(20px,4vw,40px)}
+.board-title{font-family:var(--ff-display);font-weight:700;color:#fdf6e3;text-align:center;
+  font-size:clamp(19px,3.6vw,30px);letter-spacing:.3px;text-shadow:0 1px 0 rgba(0,0,0,.4)}
+.board-rule{height:2px;background:rgba(253,246,227,.32);margin:14px 0 20px;border-radius:2px}
+.board-list{list-style:none;padding:0;display:flex;flex-direction:column;gap:15px}
+.board-list li{position:relative;padding-left:26px;font-family:var(--ff-body);color:#eef3e9;
+  font-size:clamp(14px,2.4vw,17.5px);line-height:1.6}
+.board-list li::before{content:"›";position:absolute;left:5px;top:-1px;color:#7fd1b0;font-weight:700;font-size:1.1em}
+.board-list b{color:#ffe08a;font-weight:600}
+.board-list u{text-decoration-color:rgba(127,209,176,.7);text-underline-offset:3px}
+.board .sub{margin-top:6px;font-size:.92em;color:#cde3d2;padding-left:2px}
+
+/* --- QUIZ --- */
+.quiz-card{background:linear-gradient(180deg,var(--bg-2),var(--bg-1));border:1px solid var(--line);
+  padding:clamp(22px,4vw,34px)}
+.quiz-head{display:flex;align-items:center;gap:12px;margin:2px 34px 18px 0}
+.quiz-kicker{font-family:var(--ff-mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+.quiz-step{margin-left:auto;font-family:var(--ff-mono);font-size:12px;color:var(--ink-mute)}
+.quiz-q{font-family:var(--ff-display);font-weight:600;color:var(--ink);line-height:1.3;margin-bottom:18px;
+  font-size:clamp(17px,3vw,22px)}
+.quiz-opts{display:flex;flex-direction:column;gap:11px}
+.quiz-opt{text-align:left;padding:14px 18px;border-radius:12px;border:1px solid var(--line);background:var(--glass-2);
+  color:var(--ink);font-family:var(--ff-body);font-size:clamp(14px,2.4vw,16px);cursor:pointer;transition:.15s var(--ease)}
+.quiz-opt:hover{border-color:color-mix(in srgb,var(--accent) 50%,transparent)}
+.quiz-opt.correct{border-color:#34d399;background:color-mix(in srgb,#34d399 20%,var(--glass-2));color:#d1fae5}
+.quiz-opt.wrong{border-color:#f87171;background:color-mix(in srgb,#f87171 20%,var(--glass-2));color:#fee2e2}
+.quiz-opt[disabled]{cursor:default}
+.quiz-foot{margin-top:18px;display:flex;justify-content:flex-end;gap:10px}
+.quiz-btn{border:none;border-radius:10px;padding:11px 22px;cursor:pointer;font-family:var(--ff-display);font-weight:600;
+  font-size:14px;background:linear-gradient(180deg,#fff,var(--accent));color:#06121a}
+.quiz-btn:active{transform:scale(.97)}
+.quiz-btn[disabled]{opacity:.4;cursor:default;filter:grayscale(.3)}
+.quiz-btn.ghost{background:var(--glass-2);color:var(--ink);border:1px solid var(--line)}
+.quiz-result{text-align:center;padding:8px 0 4px}
+.quiz-score{font-family:var(--ff-display);font-weight:700;color:var(--accent);font-size:clamp(38px,9vw,60px);line-height:1}
+.quiz-result p{color:var(--ink-2);margin-top:10px;font-size:15px}
+.quiz-result .quiz-foot{justify-content:center;margin-top:24px}
 </style>
 </head>
 <body>
@@ -554,7 +610,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.7</div>
+<div class="app-version" aria-hidden="true">v1.3.0</div>
 
 <!-- ============================================================
      3. CAPA
@@ -845,6 +901,7 @@ body.in-chapter .help-btn{display:grid}
   <div class="progress" id="progress"></div>
   <div class="bar" id="bar">
     <button class="back" id="btnBack">← Capítulos</button>
+    <button class="back" id="btnHome" title="Ir para a capa" aria-label="Início">⌂ Início</button>
     <div class="spacer"></div>
     <div class="counter" id="counter">1 / 1</div>
   </div>
@@ -873,6 +930,36 @@ body.in-chapter .help-btn{display:grid}
   <button class="lab-view-close" id="labViewClose" aria-label="Fechar">✕</button>
   <div class="lab-view-stage">
     <img class="lab-view-img" id="labViewImg" src="imagens/lab_chem.jpeg" alt="Dentro do laboratório">
+  </div>
+</div>
+
+<!-- POPUP: RESUMO DO CAPÍTULO (estilo quadro p/ copiar) -->
+<div id="resumo" class="modal" aria-hidden="true">
+  <div class="modal-card board">
+    <button class="modal-close" data-close aria-label="Fechar">✕</button>
+    <div class="board-inner">
+      <h3 class="board-title">Capítulo I — Introdução à Química</h3>
+      <div class="board-rule"></div>
+      <ul class="board-list">
+        <li><b>Química:</b> ciência que estuda a <u>matéria</u> — os materiais e as substâncias químicas.</li>
+        <li><b>Reação química:</b> transformação em que um tipo de matéria dá origem a um <u>novo tipo</u>, diferente do original.
+          <div class="sub">Ex.: minérios (bauxita, hematita, calcopirita) → metais (alumínio, ferro, cobre).</div></li>
+        <li><b>Matéria:</b> tudo que tem <b>massa</b> e ocupa <b>lugar no espaço</b>; pode ser manipulada.</li>
+        <li>Todo tipo de matéria <b>tem massa</b>: sólidos (metal), líquidos (água) e até gases (o <b>ar</b>).</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- POPUP: QUIZ (5 perguntas, 3 alternativas) -->
+<div id="quiz" class="modal" aria-hidden="true">
+  <div class="modal-card quiz-card">
+    <button class="modal-close" data-close aria-label="Fechar">✕</button>
+    <div class="quiz-head">
+      <span class="quiz-kicker">Quiz · Capítulo I</span>
+      <span class="quiz-step" id="quizStep">1 / 5</span>
+    </div>
+    <div class="quiz-body" id="quizBody"></div>
   </div>
 </div>
 
@@ -1055,6 +1142,17 @@ body.in-chapter .help-btn{display:grid}
     showView("deck"); deck.layout();
   }
 
+  // volta direto para a CAPA a qualquer momento (botão "Início")
+  function goCover(){
+    document.querySelectorAll(".modal.open").forEach(m => m.classList.remove("open"));
+    const lv = document.getElementById("labView"); if (lv) lv.classList.remove("open");
+    const hp = document.getElementById("help"); if (hp) hp.classList.remove("open");
+    if (activeChapter) activeChapter.classList.remove("active");
+    activeChapter = null; mode = "cover";
+    document.body.classList.remove("in-chapter");
+    showView("cover");
+  }
+
   function buildDots(){
     slideDots.innerHTML = "";
     slides.forEach((_,i) => { const d=document.createElement("i"); if(i===si)d.classList.add("on"); slideDots.appendChild(d); });
@@ -1165,6 +1263,7 @@ body.in-chapter .help-btn{display:grid}
   btnNext.addEventListener("click", next);
   btnPrev.addEventListener("click", prev);
   $("#btnBack").addEventListener("click", closeChapter);
+  { const hb = $("#btnHome"); if (hb) hb.addEventListener("click", goCover); }
   $("#btnHelp").addEventListener("click", () => $("#help").classList.add("open"));
 
   /* ============================================================
@@ -1268,7 +1367,10 @@ body.in-chapter .help-btn{display:grid}
       return;
     }
     if (mode === "chapter"){
-      if (e.key === "Escape"){ closeChapter(); e.preventDefault(); return; }
+      if (e.key === "Escape"){
+        const m = document.querySelector(".modal.open"); if (m){ m.classList.remove("open"); e.preventDefault(); return; }
+        closeChapter(); e.preventDefault(); return;
+      }
       if (NEXT_KEYS.includes(e.key)){ next(); e.preventDefault(); }
       else if (PREV_KEYS.includes(e.key)){ prev(); e.preventDefault(); }
     }
@@ -1673,12 +1775,9 @@ body.in-chapter .help-btn{display:grid}
   // ao LEVANTAR um objeto da balança, o visor zera (só marca em contato com a base)
   objs.forEach(o => o.addEventListener("pointerdown", () => { if (onScale.delete(o)) updateReading(); }));
 
-  /* ---- botões finais ---- */
+  /* ---- botões finais (Resumo/Quiz tratados no script dos popups) ---- */
   acts.forEach(b => b.addEventListener("click", e => e.stopPropagation()));
   document.getElementById("s3btnNext").addEventListener("click", () => { Slides.vibe(16); Slides.nextChapter(); });
-  // TODO: ações de "Resumo" e "Quiz" (a definir)
-  document.getElementById("s3btnResumo").addEventListener("click", () => Slides.vibe(12));
-  document.getElementById("s3btnQuiz").addEventListener("click", () => Slides.vibe(12));
   // o VIDRO é o conjunto arrastável (a balança, sendo filha, move junto)
   Slides.manip(glass, { enabled:()=>glass._out, onDrop:()=>{
     if (overlaps(glass, block)){ glass._out=false; flyInto(glass, block, () => { glass.classList.remove("out"); resetEl(glass); }); }
@@ -1698,6 +1797,83 @@ body.in-chapter .help-btn{display:grid}
     glass._out=true; glass.classList.add("out"); glass.style.transition="none"; glass._dx=0; glass._dy=0; glass._scale=1; glass.style.transform=""; glass.style.opacity="";
   }
   document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
+})();
+</script>
+
+<script>
+/* ============================================================
+   POPUPS — Resumo (quadro) e Quiz (Capítulo I)
+   ============================================================ */
+(() => {
+  const resumo = document.getElementById("resumo");
+  const quiz   = document.getElementById("quiz");
+  if (!resumo || !quiz) return;
+  const open  = m => m.classList.add("open");
+  const close = m => m.classList.remove("open");
+
+  // fechar pelo ✕ ou clicando no fundo escuro
+  document.querySelectorAll(".modal").forEach(m => {
+    m.addEventListener("click", e => { if (e.target === m) close(m); });
+    m.querySelectorAll("[data-close]").forEach(b => b.addEventListener("click", () => close(m)));
+  });
+
+  /* ---- QUIZ: 5 perguntas, 3 alternativas ---- */
+  const QUESTIONS = [
+    { q:"O que a Química estuda?",
+      opts:["Apenas os seres vivos","A matéria, os materiais e as substâncias","Somente os planetas"], a:1 },
+    { q:"O que é uma reação química?",
+      opts:["Uma transformação em que um tipo de matéria dá origem a um novo tipo","Apenas misturar cores","Quebrar um objeto ao meio"], a:0 },
+    { q:"O que é matéria?",
+      opts:["Apenas o que conseguimos ver","Tudo que tem massa e ocupa lugar no espaço","Somente os metais"], a:1 },
+    { q:"De minérios como bauxita, hematita e calcopirita obtemos:",
+      opts:["Plástico, vidro e papel","Água, ar e fogo","Alumínio, ferro e cobre"], a:2 },
+    { q:"O ar (um gás) tem massa?",
+      opts:["Não, gases não têm massa","Sim, todo tipo de matéria tem massa","Só quando está frio"], a:1 },
+  ];
+  const stepEl = document.getElementById("quizStep");
+  const body   = document.getElementById("quizBody");
+  let qi = 0, score = 0, answered = false;
+
+  function renderQ(){
+    answered = false;
+    const it = QUESTIONS[qi];
+    stepEl.textContent = (qi+1) + " / " + QUESTIONS.length;
+    body.innerHTML =
+      `<p class="quiz-q">${it.q}</p>` +
+      `<div class="quiz-opts">` +
+        it.opts.map((o,i) => `<button class="quiz-opt" data-i="${i}">${o}</button>`).join("") +
+      `</div>` +
+      `<div class="quiz-foot"><button class="quiz-btn" id="quizNext" disabled>${qi < QUESTIONS.length-1 ? "Próxima →" : "Ver resultado"}</button></div>`;
+    body.querySelectorAll(".quiz-opt").forEach(b => b.addEventListener("click", () => choose(b)));
+    body.querySelector("#quizNext").addEventListener("click", () => {
+      if (qi < QUESTIONS.length-1){ qi++; renderQ(); } else { showResult(); }
+    });
+  }
+  function choose(btn){
+    if (answered) return; answered = true;
+    const it = QUESTIONS[qi], i = +btn.dataset.i;
+    body.querySelectorAll(".quiz-opt").forEach((b,bi) => { b.setAttribute("disabled","");
+      if (bi === it.a) b.classList.add("correct"); });
+    if (i === it.a){ score++; if (window.Slides) Slides.vibe(20); }
+    else { btn.classList.add("wrong"); if (window.Slides) Slides.vibe([12,40,12]); }
+    body.querySelector("#quizNext").removeAttribute("disabled");
+  }
+  function showResult(){
+    stepEl.textContent = "fim";
+    const msg = score === QUESTIONS.length ? "Perfeito! Você dominou o capítulo. 🎉"
+              : score >= 3 ? "Muito bem! Quase lá." : "Vale revisar o resumo e tentar de novo.";
+    body.innerHTML =
+      `<div class="quiz-result"><div class="quiz-score">${score} / ${QUESTIONS.length}</div><p>${msg}</p>
+        <div class="quiz-foot"><button class="quiz-btn ghost" id="quizRetry">Refazer</button>
+        <button class="quiz-btn" id="quizDone">Fechar</button></div></div>`;
+    body.querySelector("#quizRetry").addEventListener("click", startQuiz);
+    body.querySelector("#quizDone").addEventListener("click", () => close(quiz));
+  }
+  function startQuiz(){ qi=0; score=0; renderQ(); open(quiz); }
+
+  /* ---- gatilhos dos botões do slide 3 ---- */
+  const bR = document.getElementById("s3btnResumo"); if (bR) bR.addEventListener("click", () => open(resumo));
+  const bQ = document.getElementById("s3btnQuiz");   if (bQ) bQ.addEventListener("click", startQuiz);
 })();
 </script>
 

@@ -458,7 +458,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.1.8</div>
+<div class="app-version" aria-hidden="true">v1.1.9</div>
 
 <!-- ============================================================
      3. CAPA
@@ -1159,15 +1159,19 @@ body.in-chapter .help-btn{display:grid}
   let cur = 0, cdx = 0;
 
   /* ---------- carrossel coverflow ---------- */
-  const cspan = () => Math.min((track.clientWidth || 600) * 0.46, 240);
+  const cspan = () => Math.min((track.clientWidth || 600) * 0.52, 280);
   function renderCar(animate){
     const sp = cspan(), v = cur - cdx/sp;
     cards.forEach((el,i) => {
       const rel = i - v, ar = Math.abs(rel);
-      el.style.transition = animate ? "transform .45s var(--ease),opacity .45s var(--ease)" : "none";
-      el.style.transform = `translate(-50%,-50%) translateX(${rel*sp}px) translateZ(${-ar*120}px) rotateY(${Math.max(-30,Math.min(30,-rel*20))}deg) scale(${Math.max(.72,1-ar*0.12)})`;
+      // transição da troca 2x mais lenta (.45s -> .9s)
+      el.style.transition = animate ? "transform .9s var(--ease),opacity .9s var(--ease),filter .9s var(--ease)" : "none";
+      // centro bem maior (1.22) e laterais menores/mais ao fundo
+      el.style.transform = `translate(-50%,-50%) translateX(${rel*sp}px) translateZ(${-ar*150}px) rotateY(${Math.max(-30,Math.min(30,-rel*20))}deg) scale(${Math.max(.66,1.22-ar*0.36)})`;
       el.style.zIndex = String(100 - Math.round(ar*10));
       el.style.opacity = ar > 1.6 ? "0" : "1";
+      // escurece as cartas que não estão no centro
+      el.style.filter = `brightness(${Math.max(.35,1-ar*0.5).toFixed(3)})`;
     });
   }
 

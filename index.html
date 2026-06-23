@@ -350,7 +350,7 @@ body{
 
 /* OBJETOS arrastáveis (saem da caixa) — fila inferior central */
 .s3-objects{position:absolute;left:0;right:0;bottom:clamp(64px,12vh,112px);z-index:9;
-  display:flex;justify-content:center;align-items:flex-end;gap:clamp(20px,5vw,52px);padding:0 20px;pointer-events:none}
+  display:flex;justify-content:center;align-items:flex-end;gap:clamp(12px,3.2vw,34px);padding:0 20px;pointer-events:none}
 .s3-obj{margin:0;pointer-events:auto;cursor:grab;touch-action:none;display:flex;flex-direction:column;align-items:center;gap:6px;
   opacity:0;visibility:hidden;transform:translate(0,0);filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
 .s3-obj.out{opacity:1;visibility:visible}
@@ -364,7 +364,8 @@ body{
   border:1.5px solid rgba(255,255,255,.5);box-shadow:inset 0 0 20px rgba(255,255,255,.16)}
 .s3-balloon .balloon::after{content:"";position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
   border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid rgba(255,255,255,.5)}
-.s3-balloon .balloon span{font-family:var(--ff-display);font-weight:700;color:var(--ink);font-size:clamp(14px,2.4vw,18px);letter-spacing:.5px}
+.s3-balloon .balloon-tag{font-family:var(--ff-display);font-weight:700;color:var(--ink);font-size:clamp(14px,2.4vw,18px);letter-spacing:.5px;
+  text-shadow:0 2px 8px rgba(0,0,0,.5)}
 
 /* fragmentos = EVENTOS NÃO INTERATIVOS (revelados pelo passador/toque/seta) */
 .fragment{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
@@ -537,7 +538,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.4</div>
+<div class="app-version" aria-hidden="true">v1.2.5</div>
 
 <!-- ============================================================
      3. CAPA
@@ -695,7 +696,7 @@ body.in-chapter .help-btn{display:grid}
 
       <!-- área do vidro (com gravidade) + balança digital de precisão -->
       <div class="s3-glass" id="s3glass" aria-hidden="true">
-        <span class="s3-glass-tag">vidro · gravidade</span>
+        <span class="s3-glass-tag">Balança de precisão</span>
         <figure class="s3-scale out" id="s3scale">
           <div class="s3-scale-plate"></div>
           <div class="s3-scale-base">
@@ -706,18 +707,29 @@ body.in-chapter .help-btn{display:grid}
 
       <!-- objetos que saem da caixa (arraste-os sobre a balança) -->
       <div class="s3-objects" id="s3objects">
-        <figure class="s3-obj" id="s3objMetal" data-mass="14.8" data-interactive data-nohint>
+        <figure class="s3-obj" id="s3objMetal" data-mass="12" data-interactive data-nohint>
           <img src="imagens/metal_cold.png" alt="lata de metal amassada">
         </figure>
-        <figure class="s3-obj s3-cup" id="s3objCup" data-mass="9.5" data-interactive data-nohint>
+        <figure class="s3-obj s3-cup" id="s3objCup" data-mass="10" data-interactive data-nohint>
           <svg class="cup" viewBox="0 0 60 80" aria-hidden="true">
             <path d="M9 5 H51 L45 71 Q44 75 39 75 H21 Q16 75 15 71 Z"
                   fill="rgba(180,220,255,.10)" stroke="rgba(255,255,255,.62)" stroke-width="2.4" stroke-linejoin="round"/>
             <path d="M14 14 L18 59" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" opacity=".55"/>
           </svg>
         </figure>
+        <figure class="s3-obj s3-cup" id="s3objCupFull" data-mass="210" data-interactive data-nohint>
+          <svg class="cup" viewBox="0 0 60 80" aria-hidden="true">
+            <clipPath id="s3cupWater"><path d="M9 5 H51 L45 71 Q44 75 39 75 H21 Q16 75 15 71 Z"/></clipPath>
+            <rect x="8" y="24" width="44" height="54" fill="rgba(74,165,255,.5)" clip-path="url(#s3cupWater)"/>
+            <path d="M9 24 Q30 20.5 51 24" fill="none" stroke="rgba(190,228,255,.85)" stroke-width="1.6"/>
+            <path d="M9 5 H51 L45 71 Q44 75 39 75 H21 Q16 75 15 71 Z"
+                  fill="rgba(180,220,255,.05)" stroke="rgba(255,255,255,.62)" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M14 14 L18 59" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" opacity=".5"/>
+          </svg>
+        </figure>
         <figure class="s3-obj s3-balloon" id="s3objBalloon" data-mass="1.9" data-interactive data-nohint>
-          <div class="balloon"><span>Ar</span></div>
+          <span class="balloon-tag">Ar</span>
+          <div class="balloon"></div>
         </figure>
       </div>
     </article>
@@ -1567,7 +1579,7 @@ body.in-chapter .help-btn{display:grid}
   const scale  = document.getElementById("s3scale");
   const plate  = scale.querySelector(".s3-scale-plate");
   const valEl  = document.getElementById("s3scaleVal");
-  const objs   = ["s3objMetal","s3objCup","s3objBalloon"].map(id => document.getElementById(id));
+  const objs   = ["s3objMetal","s3objCup","s3objCupFull","s3objBalloon"].map(id => document.getElementById(id));
   const queue  = [...defs, ...objs];            // ordem de saída da caixa
   const onScale = new Set();                    // objetos atualmente sobre a balança
 
@@ -1614,15 +1626,24 @@ body.in-chapter .help-btn{display:grid}
     });
     updateReading();
   }
+  function returnHome(o){                          // volta o objeto ao seu lugar de origem (não entra no vidro)
+    o.style.transition = "transform .42s var(--ease)";
+    o._dx=0; o._dy=0; o.style.transform = `translate(0,0) scale(${o._scale||1})`;
+  }
   function objDrop(o){
-    if (scale._out && overlaps(o, glass)){ onScale.add(o); Slides.vibe(14); settle(); }   // caiu no vidro -> na balança
-    else if (overlaps(o, block)){ hideItem(o); }                                          // de volta à caixa
-    else { onScale.delete(o); updateReading(); }                                          // largado fora -> sai da balança
+    if (scale._out && overlaps(o, glass)){
+      if (onScale.size > 0){ returnHome(o); Slides.vibe(8); return; }   // já há um objeto no vidro: não permite o 2º
+      onScale.add(o); Slides.vibe(14); settle();                        // caiu no vidro -> assenta na balança
+    }
+    else if (overlaps(o, block)){ hideItem(o); }                        // de volta à caixa
+    else { onScale.delete(o); updateReading(); }                        // largado fora -> sai da balança
   }
 
   /* ---- gestos ---- */
   defs.forEach(d => Slides.manip(d, { enabled:()=>d._out, onDrop:()=>{ if (overlaps(d, block)) hideItem(d); } }));
   objs.forEach(o => Slides.manip(o, { enabled:()=>o._out, onDrop:()=>objDrop(o) }));
+  // ao LEVANTAR um objeto da balança, o visor zera (só marca em contato com a base)
+  objs.forEach(o => o.addEventListener("pointerdown", () => { if (onScale.delete(o)) updateReading(); }));
   Slides.manip(scale, { enabled:()=>scale._out, onDrop:()=>{
     if (overlaps(scale, block)){ scale._out=false; flyInto(scale, block, () => { scale.classList.remove("out"); resetEl(scale); }); }
   }});

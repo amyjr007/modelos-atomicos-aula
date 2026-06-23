@@ -299,6 +299,18 @@ body{
   opacity:0;visibility:hidden;transform:translate(0,0)}
 .s2-def.out{opacity:1;visibility:visible}
 .s2-def b{color:var(--accent);font-weight:700}
+/* ---------- SLIDE 3 (O que é matéria?) ---------- */
+.s3-top{position:absolute;top:clamp(58px,9vh,92px);left:0;right:0;
+  display:flex;flex-direction:column;align-items:center;text-align:center;padding:0 20px;gap:clamp(12px,2.4vh,22px);
+  animation:rise .6s var(--ease) both}
+/* mesmo tamanho do texto que define reação química no slide 2 (.s2-def) */
+.s3-lead{font-family:var(--ff-display);font-weight:500;line-height:1.45;letter-spacing:.2px;
+  font-size:clamp(13px,2.3vw,18px);color:var(--ink-2);max-width:60ch;touch-action:none}
+.s3-title{font-family:var(--ff-display);font-weight:700;line-height:1.05;letter-spacing:-1px;
+  font-size:clamp(30px,6vw,60px);max-width:18ch;touch-action:none;
+  background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.s3-title .hl{-webkit-text-fill-color:var(--accent);color:var(--accent)}
 
 /* fragmentos = EVENTOS NÃO INTERATIVOS (revelados pelo passador/toque/seta) */
 .fragment{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
@@ -471,7 +483,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.1</div>
+<div class="app-version" aria-hidden="true">v1.2.2</div>
 
 <!-- ============================================================
      3. CAPA
@@ -605,6 +617,21 @@ body.in-chapter .help-btn{display:grid}
         <figure class="s2-result" id="s2res2"><img src="imagens/ferro.png" alt="ferro"><figcaption>Ferro</figcaption></figure>
         <figure class="s2-result" id="s2res3"><img src="imagens/cobre.png" alt="cobre"><figcaption>Cobre</figcaption></figure>
       </div>
+    </article>
+
+    <!-- ░░ SLIDE 3 — O que é matéria? ░░ -->
+    <article class="slide" data-noend>
+      <div class="s3-top">
+        <p class="s3-lead" data-manip>Pra dominar reações químicas é necessário entender uma coisa:</p>
+        <h2 class="s3-title" data-manip>O que é <span class="hl">matéria</span>?</h2>
+      </div>
+
+      <!-- caixa surpresa (mesmo lugar e estilo dos slides 1 e 2) — conteúdo a definir -->
+      <button class="qblock" id="qBlock3" data-interactive aria-label="Revelar">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <span class="rivet bl"></span><span class="rivet br"></span>
+        <span class="qmark">?</span>
+      </button>
     </article>
 
     <!-- ===========================================================
@@ -1433,6 +1460,23 @@ body.in-chapter .help-btn{display:grid}
     items.concat(results).forEach(el => { el._out=false; el._consumed=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
   }
   document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
+})();
+</script>
+
+<script>
+/* ============================================================
+   INTERAÇÕES — CAPÍTULO I · SLIDE 3 (O que é matéria?)
+   A caixa surpresa já está posicionada; o que sai dela será
+   definido depois (aguardando o conteúdo do professor).
+   ============================================================ */
+(() => {
+  const block = document.getElementById("qBlock3");
+  if (!block) return;
+  const hitBlock = () => { block.classList.remove("hit"); void block.offsetWidth; block.classList.add("hit"); Slides.vibe(20); };
+  block.addEventListener("click", e => {
+    e.stopPropagation(); hitBlock();
+    // TODO: revelar o conteúdo da caixa (a definir)
+  });
 })();
 </script>
 

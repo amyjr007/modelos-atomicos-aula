@@ -7,7 +7,7 @@
    IMPORTANTE: a cada alteração no conteúdo, suba o número da
    versão em CACHE para forçar a atualização nos dispositivos.
    ============================================================ */
-const CACHE = "modelos-atomicos-aula-v1.2.1";
+const CACHE = "modelos-atomicos-aula-v1.2.2";
 
 /* arquivos do "app shell" pré-armazenados na instalação */
 const PRECACHE = [

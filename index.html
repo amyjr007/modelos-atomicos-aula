@@ -311,6 +311,15 @@ body{
   background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .s3-title .hl{-webkit-text-fill-color:var(--accent);color:var(--accent)}
+/* textos da caixa surpresa (saem um por toque, à esquerda do bloco) */
+.s3-defs{position:absolute;right:calc(clamp(16px,3vw,46px) + clamp(94px,13vw,140px) + 16px);top:calc(50% - 60px);z-index:10;
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end;width:max-content;max-width:min(60vw,400px)}
+.s3-def{font-family:var(--ff-display);font-weight:600;line-height:1.35;color:var(--ink);text-align:left;
+  font-size:clamp(14px,2.5vw,20px);max-width:min(56vw,340px);
+  background:var(--glass-2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:12px 18px;
+  box-shadow:0 14px 38px rgba(0,0,0,.45);cursor:grab;touch-action:none;
+  opacity:0;visibility:hidden;transform:translate(0,0)}
+.s3-def.out{opacity:1;visibility:visible}
 
 /* fragmentos = EVENTOS NÃO INTERATIVOS (revelados pelo passador/toque/seta) */
 .fragment{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
@@ -483,7 +492,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.2</div>
+<div class="app-version" aria-hidden="true">v1.2.3</div>
 
 <!-- ============================================================
      3. CAPA
@@ -632,6 +641,12 @@ body.in-chapter .help-btn{display:grid}
         <span class="rivet bl"></span><span class="rivet br"></span>
         <span class="qmark">?</span>
       </button>
+
+      <!-- textos que saem da caixa, um por toque (arraste de volta p/ esconder) -->
+      <div class="s3-defs">
+        <div class="s3-def" data-interactive data-nohint>Tudo que tem massa e ocupa lugar no espaço</div>
+        <div class="s3-def" data-interactive data-nohint>Pode ser manipulada (com as mãos)</div>
+      </div>
     </article>
 
     <!-- ===========================================================
@@ -1466,17 +1481,50 @@ body.in-chapter .help-btn{display:grid}
 <script>
 /* ============================================================
    INTERAÇÕES — CAPÍTULO I · SLIDE 3 (O que é matéria?)
-   A caixa surpresa já está posicionada; o que sai dela será
-   definido depois (aguardando o conteúdo do professor).
+   Cada toque na caixa revela o próximo texto (saindo de dentro
+   dela). Os textos arrastam + pinça; arraste de volta à caixa
+   para escondê-los.
    ============================================================ */
 (() => {
   const block = document.getElementById("qBlock3");
   if (!block) return;
+  const defs = [...document.querySelectorAll("#cap-1 .s3-def")];
+
+  const centerDelta = (el,t) => { const r=el.getBoundingClientRect(), b=t.getBoundingClientRect();
+    return { x:(b.left+b.width/2)-(r.left+r.width/2), y:(b.top+b.height/2)-(r.top+r.height/2) }; };
+  const overlaps = (el,t) => { const a=el.getBoundingClientRect(), b=t.getBoundingClientRect();
+    return !(a.right<b.left||a.left>b.right||a.bottom<b.top||a.top>b.bottom); };
   const hitBlock = () => { block.classList.remove("hit"); void block.offsetWidth; block.classList.add("hit"); Slides.vibe(20); };
+
+  function emergeFrom(el, src){
+    el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform="translate(0,0)"; el.classList.add("out");
+    const d=centerDelta(el, src);
+    el.style.transform=`translate(${d.x}px,${d.y}px) scale(.3)`; el.style.opacity="0";
+    el.getBoundingClientRect();
+    el.style.transition="transform .55s var(--ease),opacity .45s var(--ease)";
+    el.style.transform="translate(0,0) scale(1)"; el.style.opacity="1";
+  }
+  function flyInto(el, target, done){
+    const d=centerDelta(el, target), bx=(el._dx||0)+d.x, by=(el._dy||0)+d.y;
+    el.style.transition="transform .42s var(--ease),opacity .38s var(--ease)";
+    el.style.transform=`translate(${bx}px,${by}px) scale(.15)`; el.style.opacity="0";
+    setTimeout(()=>done&&done(), 420);
+  }
+  function resetEl(el){ el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; }
+  function hideItem(it){ flyInto(it, block, () => { it.classList.remove("out"); resetEl(it); it._out=false; }); }
+
+  defs.forEach(d => Slides.manip(d, { enabled:()=>d._out, onDrop:()=>{ if (overlaps(d, block)) hideItem(d); } }));
+
   block.addEventListener("click", e => {
     e.stopPropagation(); hitBlock();
-    // TODO: revelar o conteúdo da caixa (a definir)
+    const next = defs.find(d => !d._out);      // sai o próximo texto ainda escondido
+    if (next){ next._out = true; emergeFrom(next, block); }
   });
+
+  function reset(){
+    defs.forEach(el => { el._out=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
+  }
+  document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
 })();
 </script>
 

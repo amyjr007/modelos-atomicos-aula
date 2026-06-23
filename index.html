@@ -311,15 +311,60 @@ body{
   background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));
   -webkit-background-clip:text;background-clip:text;color:transparent}
 .s3-title .hl{-webkit-text-fill-color:var(--accent);color:var(--accent)}
-/* textos da caixa surpresa (saem um por toque, à esquerda do bloco) */
+/* textos da caixa surpresa (saem um por toque, à esquerda do bloco) — cada um em UMA linha */
 .s3-defs{position:absolute;right:calc(clamp(16px,3vw,46px) + clamp(94px,13vw,140px) + 16px);top:calc(50% - 60px);z-index:10;
-  display:flex;flex-direction:column;gap:12px;align-items:flex-end;width:max-content;max-width:min(60vw,400px)}
-.s3-def{font-family:var(--ff-display);font-weight:600;line-height:1.35;color:var(--ink);text-align:left;
-  font-size:clamp(14px,2.5vw,20px);max-width:min(56vw,340px);
-  background:var(--glass-2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:12px 18px;
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end;width:max-content;max-width:min(88vw,560px)}
+.s3-def{font-family:var(--ff-display);font-weight:600;line-height:1.3;color:var(--ink);text-align:left;white-space:nowrap;
+  font-size:clamp(13px,2.3vw,19px);
+  background:var(--glass-2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:11px 18px;
   box-shadow:0 14px 38px rgba(0,0,0,.45);cursor:grab;touch-action:none;
   opacity:0;visibility:hidden;transform:translate(0,0)}
 .s3-def.out{opacity:1;visibility:visible}
+
+/* ÁREA DO VIDRO (com gravidade) + BALANÇA DIGITAL — borda esquerda, meio do slide */
+.s3-glass{position:absolute;left:clamp(10px,2.5vw,34px);top:50%;transform:translateY(-50%);z-index:6;
+  width:clamp(168px,26vw,250px);height:clamp(230px,44vh,360px);border-radius:14px;
+  border:1px solid rgba(255,255,255,.16);
+  background:linear-gradient(180deg,rgba(180,220,255,.05),rgba(255,255,255,.02) 40%,rgba(140,200,255,.06));
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -34px 46px rgba(120,200,255,.06),0 22px 54px rgba(0,0,0,.42);
+  display:flex;align-items:flex-end;justify-content:center;padding:0 0 16px;pointer-events:none}
+.s3-glass::before{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
+  background:linear-gradient(115deg,rgba(255,255,255,.16),transparent 30%)}
+.s3-glass-tag{position:absolute;top:9px;left:0;right:0;text-align:center;pointer-events:none;
+  font-family:var(--ff-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-mute)}
+/* balança (figura) — fica no fundo do vidro; arrastável; some/volta pela caixa */
+.s3-scale{position:relative;z-index:2;pointer-events:auto;cursor:grab;touch-action:none;
+  width:clamp(120px,18vw,166px);margin:0;opacity:0;visibility:hidden;transform:translate(0,0)}
+.s3-scale.out{opacity:1;visibility:visible}
+.s3-scale-plate{height:9px;margin:0 6px;border-radius:6px 6px 3px 3px;
+  background:linear-gradient(180deg,#dfe5f1,#9aa3b8);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7)}
+.s3-scale-base{margin-top:5px;border-radius:9px;padding:8px 10px 11px;
+  background:linear-gradient(180deg,#2b3142,#161922);border:1px solid rgba(255,255,255,.12);
+  box-shadow:0 9px 20px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.08)}
+.s3-scale-lcd{display:flex;align-items:baseline;justify-content:center;gap:3px;border-radius:5px;padding:5px 8px;
+  background:linear-gradient(180deg,#07140d,#0b1c12);border:1px solid rgba(0,0,0,.6);
+  box-shadow:inset 0 2px 6px rgba(0,0,0,.75);
+  font-family:var(--ff-mono);color:#7CFFB0;text-shadow:0 0 9px rgba(124,255,176,.65)}
+.s3-scale-lcd span{font-size:clamp(15px,2.5vw,21px);font-weight:500;letter-spacing:1px}
+.s3-scale-lcd small{font-size:11px;opacity:.8}
+
+/* OBJETOS arrastáveis (saem da caixa) — fila inferior central */
+.s3-objects{position:absolute;left:0;right:0;bottom:clamp(64px,12vh,112px);z-index:9;
+  display:flex;justify-content:center;align-items:flex-end;gap:clamp(20px,5vw,52px);padding:0 20px;pointer-events:none}
+.s3-obj{margin:0;pointer-events:auto;cursor:grab;touch-action:none;display:flex;flex-direction:column;align-items:center;gap:6px;
+  opacity:0;visibility:hidden;transform:translate(0,0);filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.s3-obj.out{opacity:1;visibility:visible}
+.s3-obj img{width:clamp(68px,11vw,104px);height:auto;display:block}
+/* copo vazio (transparente) */
+.s3-cup .cup{width:clamp(56px,9vw,78px);height:auto;display:block}
+/* balão de ar "Ar" (transparente) */
+.s3-balloon .balloon{position:relative;width:clamp(58px,10vw,84px);height:clamp(70px,12vw,102px);
+  border-radius:50% 50% 50% 50%/56% 56% 44% 44%;display:grid;place-items:center;
+  background:radial-gradient(circle at 36% 30%,rgba(255,255,255,.30),rgba(160,210,255,.10) 58%,rgba(160,210,255,.04));
+  border:1.5px solid rgba(255,255,255,.5);box-shadow:inset 0 0 20px rgba(255,255,255,.16)}
+.s3-balloon .balloon::after{content:"";position:absolute;bottom:-8px;left:50%;transform:translateX(-50%);
+  border-left:6px solid transparent;border-right:6px solid transparent;border-top:10px solid rgba(255,255,255,.5)}
+.s3-balloon .balloon span{font-family:var(--ff-display);font-weight:700;color:var(--ink);font-size:clamp(14px,2.4vw,18px);letter-spacing:.5px}
 
 /* fragmentos = EVENTOS NÃO INTERATIVOS (revelados pelo passador/toque/seta) */
 .fragment{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
@@ -492,7 +537,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.3</div>
+<div class="app-version" aria-hidden="true">v1.2.4</div>
 
 <!-- ============================================================
      3. CAPA
@@ -646,6 +691,34 @@ body.in-chapter .help-btn{display:grid}
       <div class="s3-defs">
         <div class="s3-def" data-interactive data-nohint>Tudo que tem massa e ocupa lugar no espaço</div>
         <div class="s3-def" data-interactive data-nohint>Pode ser manipulada (com as mãos)</div>
+      </div>
+
+      <!-- área do vidro (com gravidade) + balança digital de precisão -->
+      <div class="s3-glass" id="s3glass" aria-hidden="true">
+        <span class="s3-glass-tag">vidro · gravidade</span>
+        <figure class="s3-scale out" id="s3scale">
+          <div class="s3-scale-plate"></div>
+          <div class="s3-scale-base">
+            <div class="s3-scale-lcd"><span id="s3scaleVal">0.00</span><small>g</small></div>
+          </div>
+        </figure>
+      </div>
+
+      <!-- objetos que saem da caixa (arraste-os sobre a balança) -->
+      <div class="s3-objects" id="s3objects">
+        <figure class="s3-obj" id="s3objMetal" data-mass="14.8" data-interactive data-nohint>
+          <img src="imagens/metal_cold.png" alt="lata de metal amassada">
+        </figure>
+        <figure class="s3-obj s3-cup" id="s3objCup" data-mass="9.5" data-interactive data-nohint>
+          <svg class="cup" viewBox="0 0 60 80" aria-hidden="true">
+            <path d="M9 5 H51 L45 71 Q44 75 39 75 H21 Q16 75 15 71 Z"
+                  fill="rgba(180,220,255,.10)" stroke="rgba(255,255,255,.62)" stroke-width="2.4" stroke-linejoin="round"/>
+            <path d="M14 14 L18 59" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+          </svg>
+        </figure>
+        <figure class="s3-obj s3-balloon" id="s3objBalloon" data-mass="1.9" data-interactive data-nohint>
+          <div class="balloon"><span>Ar</span></div>
+        </figure>
       </div>
     </article>
 
@@ -1481,16 +1554,24 @@ body.in-chapter .help-btn{display:grid}
 <script>
 /* ============================================================
    INTERAÇÕES — CAPÍTULO I · SLIDE 3 (O que é matéria?)
-   Cada toque na caixa revela o próximo texto (saindo de dentro
-   dela). Os textos arrastam + pinça; arraste de volta à caixa
-   para escondê-los.
+   Caixa surpresa revela, em ordem: 2 textos -> lata -> copo -> balão.
+   A balança (dentro do vidro) é arrastável e pode ser escondida na
+   caixa (e volta com prioridade ao clicar). Objetos soltos sobre o
+   vidro "caem" na balança e somam a massa no visor (vazio = 0).
    ============================================================ */
 (() => {
   const block = document.getElementById("qBlock3");
   if (!block) return;
-  const defs = [...document.querySelectorAll("#cap-1 .s3-def")];
+  const defs   = [...document.querySelectorAll("#cap-1 .s3-def")];
+  const glass  = document.getElementById("s3glass");
+  const scale  = document.getElementById("s3scale");
+  const plate  = scale.querySelector(".s3-scale-plate");
+  const valEl  = document.getElementById("s3scaleVal");
+  const objs   = ["s3objMetal","s3objCup","s3objBalloon"].map(id => document.getElementById(id));
+  const queue  = [...defs, ...objs];            // ordem de saída da caixa
+  const onScale = new Set();                    // objetos atualmente sobre a balança
 
-  const centerDelta = (el,t) => { const r=el.getBoundingClientRect(), b=t.getBoundingClientRect();
+  const cDelta = (el,t) => { const r=el.getBoundingClientRect(), b=t.getBoundingClientRect();
     return { x:(b.left+b.width/2)-(r.left+r.width/2), y:(b.top+b.height/2)-(r.top+r.height/2) }; };
   const overlaps = (el,t) => { const a=el.getBoundingClientRect(), b=t.getBoundingClientRect();
     return !(a.right<b.left||a.left>b.right||a.bottom<b.top||a.top>b.bottom); };
@@ -1498,31 +1579,66 @@ body.in-chapter .help-btn{display:grid}
 
   function emergeFrom(el, src){
     el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform="translate(0,0)"; el.classList.add("out");
-    const d=centerDelta(el, src);
+    const d=cDelta(el, src);
     el.style.transform=`translate(${d.x}px,${d.y}px) scale(.3)`; el.style.opacity="0";
     el.getBoundingClientRect();
     el.style.transition="transform .55s var(--ease),opacity .45s var(--ease)";
     el.style.transform="translate(0,0) scale(1)"; el.style.opacity="1";
   }
   function flyInto(el, target, done){
-    const d=centerDelta(el, target), bx=(el._dx||0)+d.x, by=(el._dy||0)+d.y;
+    const d=cDelta(el, target), bx=(el._dx||0)+d.x, by=(el._dy||0)+d.y;
     el.style.transition="transform .42s var(--ease),opacity .38s var(--ease)";
     el.style.transform=`translate(${bx}px,${by}px) scale(.15)`; el.style.opacity="0";
     setTimeout(()=>done&&done(), 420);
   }
   function resetEl(el){ el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; }
-  function hideItem(it){ flyInto(it, block, () => { it.classList.remove("out"); resetEl(it); it._out=false; }); }
+  function hideItem(it){ onScale.delete(it); updateReading();
+    flyInto(it, block, () => { it.classList.remove("out"); resetEl(it); it._out=false; }); }
 
+  /* ---- balança: visor = soma das massas dos objetos sobre ela ---- */
+  function updateReading(){
+    let m = 0; onScale.forEach(o => m += parseFloat(o.dataset.mass) || 0);
+    valEl.textContent = m.toFixed(2);
+  }
+  /* "gravidade": empilha os objetos sobre o prato e atualiza a massa */
+  function settle(){
+    const p = plate.getBoundingClientRect(), pcx = p.left + p.width/2, ptop = p.top;
+    let h = 0;
+    [...onScale].forEach(o => {
+      const r = o.getBoundingClientRect();
+      o._dx = (o._dx||0) + (pcx - (r.left + r.width/2));
+      o._dy = (o._dy||0) + ((ptop - h) - r.bottom);
+      o.style.transition = "transform .5s cubic-bezier(.3,1.25,.5,1)";   // queda + leve assentamento
+      o.style.transform = `translate(${o._dx}px,${o._dy}px) scale(${o._scale||1})`;
+      h += r.height * 0.55;
+    });
+    updateReading();
+  }
+  function objDrop(o){
+    if (scale._out && overlaps(o, glass)){ onScale.add(o); Slides.vibe(14); settle(); }   // caiu no vidro -> na balança
+    else if (overlaps(o, block)){ hideItem(o); }                                          // de volta à caixa
+    else { onScale.delete(o); updateReading(); }                                          // largado fora -> sai da balança
+  }
+
+  /* ---- gestos ---- */
   defs.forEach(d => Slides.manip(d, { enabled:()=>d._out, onDrop:()=>{ if (overlaps(d, block)) hideItem(d); } }));
+  objs.forEach(o => Slides.manip(o, { enabled:()=>o._out, onDrop:()=>objDrop(o) }));
+  Slides.manip(scale, { enabled:()=>scale._out, onDrop:()=>{
+    if (overlaps(scale, block)){ scale._out=false; flyInto(scale, block, () => { scale.classList.remove("out"); resetEl(scale); }); }
+  }});
 
+  /* ---- clicar na caixa ---- */
   block.addEventListener("click", e => {
     e.stopPropagation(); hitBlock();
-    const next = defs.find(d => !d._out);      // sai o próximo texto ainda escondido
+    if (!scale._out){ scale._out = true; emergeFrom(scale, block); return; }   // prioridade: balança escondida volta
+    const next = queue.find(it => !it._out);
     if (next){ next._out = true; emergeFrom(next, block); }
   });
 
   function reset(){
-    defs.forEach(el => { el._out=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
+    onScale.clear(); valEl.textContent = "0.00";
+    queue.forEach(el => { el._out=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
+    scale._out=true; scale.classList.add("out"); scale.style.transition="none"; scale._dx=0; scale._dy=0; scale._scale=1; scale.style.transform=""; scale.style.opacity="";
   }
   document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
 })();

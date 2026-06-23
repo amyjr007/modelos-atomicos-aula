@@ -280,7 +280,7 @@ body{
 .s2-min figcaption{font-family:var(--ff-display);font-weight:600;font-size:clamp(12px,2vw,15px);color:var(--ink-2);letter-spacing:.3px;text-align:center}
 /* definição da reação química — 1º elemento a sair do bloco "?" */
 .s2-def{position:absolute;right:calc(clamp(16px,3vw,46px) + clamp(94px,13vw,140px) + 16px);top:calc(50% - 44px);z-index:10;
-  width:max-content;max-width:min(50vw,360px);cursor:grab;touch-action:none;
+  width:max-content;max-width:min(84vw,60ch);cursor:grab;touch-action:none;
   font-family:var(--ff-display);font-weight:500;font-size:clamp(13px,2.3vw,18px);line-height:1.45;color:var(--ink);
   background:var(--glass-2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:14px 20px;
   box-shadow:0 14px 38px rgba(0,0,0,.45);
@@ -431,7 +431,8 @@ body.in-chapter .help-btn{display:grid}
 
 /* "ver dentro do lab" — overlay com fundo borrado/escuro + zoom */
 .lab-view{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:24px;
-  background:rgba(3,5,12,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+  /* fundo escuro sólido (sem backdrop-filter sobre o canvas animado, que causava flicker da imagem) */
+  background:radial-gradient(120% 120% at 50% 30%,rgba(10,14,29,.94),rgba(3,5,12,.985))}
 .lab-view.open{display:flex;animation:labViewIn .35s var(--ease)}
 @keyframes labViewIn{from{opacity:0}to{opacity:1}}
 @keyframes labViewOut{from{opacity:1}to{opacity:0}}
@@ -458,7 +459,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.1.9</div>
+<div class="app-version" aria-hidden="true">v1.2.0</div>
 
 <!-- ============================================================
      3. CAPA

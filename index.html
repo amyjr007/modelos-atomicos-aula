@@ -253,6 +253,18 @@ body{
 .s2-lab{width:min(440px,52vw);height:auto;pointer-events:auto;touch-action:none;cursor:grab;
   opacity:0;visibility:hidden;transform:translate(0,0);filter:drop-shadow(0 14px 26px rgba(0,0,0,.5))}
 .s2-lab.out{opacity:1;visibility:visible}
+/* rótulo "Reação Química em andamento" — acompanha o lab (posição via JS) e pulsa no ritmo da reação */
+.s2-react-label{position:absolute;left:50%;top:50%;z-index:9;pointer-events:none;opacity:0;visibility:hidden}
+.s2-react-label.on{opacity:1;visibility:visible}
+.s2-react-label span{display:inline-block;white-space:nowrap;transform:translate(-50%,0);
+  font-family:var(--ff-display);font-weight:700;font-size:clamp(14px,2.6vw,20px);letter-spacing:.3px;
+  color:var(--accent);text-shadow:0 2px 12px rgba(0,0,0,.65),0 0 18px color-mix(in srgb,var(--accent) 45%,transparent)}
+.s2-react-label.on span{animation:reactPulse .5s ease-in-out infinite}
+@keyframes reactPulse{
+  0%{opacity:.55;transform:translate(-50%,0) scale(.95)}
+  50%{opacity:1;transform:translate(-50%,0) scale(1.08)}
+  100%{opacity:.55;transform:translate(-50%,0) scale(.95)}
+}
 /* fumaça colorida (camada no centro do lab) */
 .s2-fx{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none}
 .smoke{position:absolute;left:0;top:0;border-radius:50%;filter:blur(3px);will-change:transform,opacity;
@@ -459,7 +471,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.0</div>
+<div class="app-version" aria-hidden="true">v1.2.1</div>
 
 <!-- ============================================================
      3. CAPA
@@ -576,6 +588,8 @@ body.in-chapter .help-btn{display:grid}
         <div class="s2-lab-host" id="s2labHost">
           <img class="s2-lab" id="s2lab" src="imagens/lab.png" alt="laboratório">
         </div>
+        <!-- aviso que pulsa durante a reação (some ao terminar) -->
+        <div class="s2-react-label" id="s2reactLabel" aria-hidden="true"><span>Reação Química em andamento</span></div>
       </div>
 
       <!-- minérios saem para a borda esquerda, um embaixo do outro (com o nome) -->
@@ -1303,6 +1317,7 @@ body.in-chapter .help-btn{display:grid}
   const labHost = document.getElementById("s2labHost");
   const fx = document.getElementById("s2fx");
   const labwrap = document.querySelector("#cap-1 .s2-labwrap");
+  const reactLabel = document.getElementById("s2reactLabel");
   const def = document.getElementById("s2def");
   const mins = [...document.querySelectorAll("#cap-1 .s2-min")];
   const results = ["s2res1","s2res2","s2res3"].map(id => document.getElementById(id));
@@ -1366,13 +1381,15 @@ body.in-chapter .help-btn{display:grid}
   let smokeRAF = 0;
   function trackSmoke(){
     const lr = lab.getBoundingClientRect(), wr = labwrap.getBoundingClientRect();
-    const cx = (lr.left+lr.right)/2 - (wr.left+wr.right)/2;
-    const cy = (lr.top+lr.bottom)/2 - (wr.top+wr.bottom)/2;
-    fx.style.transform = `translate(${cx}px,${cy}px)`;
+    const wcx = (wr.left+wr.right)/2, wcy = (wr.top+wr.bottom)/2;
+    const cx = (lr.left+lr.right)/2 - wcx;
+    fx.style.transform = `translate(${cx}px,${(lr.top+lr.bottom)/2 - wcy}px)`;
+    // rótulo logo abaixo do lab (segue o tremor da reação)
+    reactLabel.style.transform = `translate(${cx}px,${lr.bottom - wcy + 16}px)`;
     smokeRAF = requestAnimationFrame(trackSmoke);
   }
   function startSmokeTracking(){ if (!smokeRAF) trackSmoke(); }
-  function stopSmokeTracking(){ cancelAnimationFrame(smokeRAF); smokeRAF = 0; fx.style.transform = ""; }
+  function stopSmokeTracking(){ cancelAnimationFrame(smokeRAF); smokeRAF = 0; fx.style.transform = ""; reactLabel.style.transform = ""; }
 
   /* ---- sugar o minério para dentro do lab e reagir por 5s ---- */
   function spawnSmoke(color){
@@ -1388,6 +1405,7 @@ body.in-chapter .help-btn{display:grid}
     flyInto(min, lab, () => { min.classList.remove("out"); resetEl(min); min._out = false; });  // sugado p/ dentro
     min._consumed = true;                                          // transformado: não volta a sair do bloco
     labHost.classList.add("reacting");                              // tremor + pulso
+    reactLabel.classList.add("on");                                // aviso pulsante embaixo do lab
     startSmokeTracking();                                          // fumaça segue o lab
     const color = SMOKE[idx] || "#fff";
     const spawner = setInterval(() => spawnSmoke(color), 120);      // fumaça colorida
@@ -1395,6 +1413,7 @@ body.in-chapter .help-btn{display:grid}
       clearInterval(spawner);
       stopSmokeTracking();
       labHost.classList.remove("reacting");
+      reactLabel.classList.remove("on");                           // some quando o fenômeno acaba
       const r = results[idx];
       if (r && !r._out){ r._out = true; emergeFrom(r, lab); }       // produto sai do lab
     }, 5000);
@@ -1410,7 +1429,7 @@ body.in-chapter .help-btn{display:grid}
 
   function reset(){
     labView.classList.remove("open"); labView.style.animation=""; labStage.style.animation="";
-    labHost.classList.remove("reacting"); stopSmokeTracking(); fx.innerHTML = "";
+    labHost.classList.remove("reacting"); reactLabel.classList.remove("on"); stopSmokeTracking(); fx.innerHTML = "";
     items.concat(results).forEach(el => { el._out=false; el._consumed=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
   }
   document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });

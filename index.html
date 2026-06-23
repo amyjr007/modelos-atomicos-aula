@@ -322,20 +322,22 @@ body{
 .s3-def.out{opacity:1;visibility:visible}
 
 /* ÁREA DO VIDRO (com gravidade) + BALANÇA DIGITAL — borda esquerda, meio do slide */
-.s3-glass{position:absolute;left:clamp(10px,2.5vw,34px);top:50%;transform:translateY(-50%);z-index:6;
+/* wrapper centraliza o conjunto na vertical (sem usar transform, que é do arraste) */
+.s3-glass-wrap{position:absolute;left:clamp(10px,2.5vw,34px);top:0;bottom:0;z-index:6;display:flex;align-items:center;pointer-events:none}
+.s3-glass{position:relative;pointer-events:auto;cursor:grab;touch-action:none;
   width:clamp(168px,26vw,250px);height:clamp(230px,44vh,360px);border-radius:14px;
   border:1px solid rgba(255,255,255,.16);
   background:linear-gradient(180deg,rgba(180,220,255,.05),rgba(255,255,255,.02) 40%,rgba(140,200,255,.06));
   box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -34px 46px rgba(120,200,255,.06),0 22px 54px rgba(0,0,0,.42);
-  display:flex;align-items:flex-end;justify-content:center;padding:0 0 16px;pointer-events:none}
+  display:flex;align-items:flex-end;justify-content:center;padding:0 0 16px;
+  opacity:0;visibility:hidden;transform:translate(0,0)}
+.s3-glass.out{opacity:1;visibility:visible}
 .s3-glass::before{content:"";position:absolute;inset:0;border-radius:14px;pointer-events:none;
   background:linear-gradient(115deg,rgba(255,255,255,.16),transparent 30%)}
 .s3-glass-tag{position:absolute;top:9px;left:0;right:0;text-align:center;pointer-events:none;
   font-family:var(--ff-mono);font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-mute)}
-/* balança (figura) — fica no fundo do vidro; arrastável; some/volta pela caixa */
-.s3-scale{position:relative;z-index:2;pointer-events:auto;cursor:grab;touch-action:none;
-  width:clamp(120px,18vw,166px);margin:0;opacity:0;visibility:hidden;transform:translate(0,0)}
-.s3-scale.out{opacity:1;visibility:visible}
+/* balança — parte do vidro (move junto); sempre visível */
+.s3-scale{position:relative;z-index:2;pointer-events:none;width:clamp(120px,18vw,166px);margin:0;transform:translate(0,0)}
 .s3-scale-plate{height:9px;margin:0 6px;border-radius:6px 6px 3px 3px;
   background:linear-gradient(180deg,#dfe5f1,#9aa3b8);box-shadow:0 2px 5px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.7)}
 .s3-scale-base{margin-top:5px;border-radius:9px;padding:8px 10px 11px;
@@ -538,7 +540,7 @@ body.in-chapter .help-btn{display:grid}
 <div class="grid-bg" aria-hidden="true"></div>
 
 <!-- VERSÃO — incrementar a cada mudança -->
-<div class="app-version" aria-hidden="true">v1.2.5</div>
+<div class="app-version" aria-hidden="true">v1.2.6</div>
 
 <!-- ============================================================
      3. CAPA
@@ -694,15 +696,17 @@ body.in-chapter .help-btn{display:grid}
         <div class="s3-def" data-interactive data-nohint>Pode ser manipulada (com as mãos)</div>
       </div>
 
-      <!-- área do vidro (com gravidade) + balança digital de precisão -->
-      <div class="s3-glass" id="s3glass" aria-hidden="true">
-        <span class="s3-glass-tag">Balança de precisão</span>
-        <figure class="s3-scale out" id="s3scale">
-          <div class="s3-scale-plate"></div>
-          <div class="s3-scale-base">
-            <div class="s3-scale-lcd"><span id="s3scaleVal">0.00</span><small>g</small></div>
-          </div>
-        </figure>
+      <!-- vidro (com gravidade) + balança: UM conjunto só, arrastável e escondível na caixa -->
+      <div class="s3-glass-wrap">
+        <div class="s3-glass out" id="s3glass" data-interactive data-nohint>
+          <span class="s3-glass-tag">Balança de precisão</span>
+          <figure class="s3-scale" id="s3scale">
+            <div class="s3-scale-plate"></div>
+            <div class="s3-scale-base">
+              <div class="s3-scale-lcd"><span id="s3scaleVal">0.00</span><small>g</small></div>
+            </div>
+          </figure>
+        </div>
       </div>
 
       <!-- objetos que saem da caixa (arraste-os sobre a balança) -->
@@ -717,7 +721,7 @@ body.in-chapter .help-btn{display:grid}
             <path d="M14 14 L18 59" fill="none" stroke="rgba(255,255,255,.5)" stroke-width="2" stroke-linecap="round" opacity=".55"/>
           </svg>
         </figure>
-        <figure class="s3-obj s3-cup" id="s3objCupFull" data-mass="210" data-interactive data-nohint>
+        <figure class="s3-obj s3-cup" id="s3objCupFull" data-mass="120" data-interactive data-nohint>
           <svg class="cup" viewBox="0 0 60 80" aria-hidden="true">
             <clipPath id="s3cupWater"><path d="M9 5 H51 L45 71 Q44 75 39 75 H21 Q16 75 15 71 Z"/></clipPath>
             <rect x="8" y="24" width="44" height="54" fill="rgba(74,165,255,.5)" clip-path="url(#s3cupWater)"/>
@@ -1631,7 +1635,7 @@ body.in-chapter .help-btn{display:grid}
     o._dx=0; o._dy=0; o.style.transform = `translate(0,0) scale(${o._scale||1})`;
   }
   function objDrop(o){
-    if (scale._out && overlaps(o, glass)){
+    if (glass._out && overlaps(o, glass)){
       if (onScale.size > 0){ returnHome(o); Slides.vibe(8); return; }   // já há um objeto no vidro: não permite o 2º
       onScale.add(o); Slides.vibe(14); settle();                        // caiu no vidro -> assenta na balança
     }
@@ -1644,14 +1648,15 @@ body.in-chapter .help-btn{display:grid}
   objs.forEach(o => Slides.manip(o, { enabled:()=>o._out, onDrop:()=>objDrop(o) }));
   // ao LEVANTAR um objeto da balança, o visor zera (só marca em contato com a base)
   objs.forEach(o => o.addEventListener("pointerdown", () => { if (onScale.delete(o)) updateReading(); }));
-  Slides.manip(scale, { enabled:()=>scale._out, onDrop:()=>{
-    if (overlaps(scale, block)){ scale._out=false; flyInto(scale, block, () => { scale.classList.remove("out"); resetEl(scale); }); }
+  // o VIDRO é o conjunto arrastável (a balança, sendo filha, move junto)
+  Slides.manip(glass, { enabled:()=>glass._out, onDrop:()=>{
+    if (overlaps(glass, block)){ glass._out=false; flyInto(glass, block, () => { glass.classList.remove("out"); resetEl(glass); }); }
   }});
 
   /* ---- clicar na caixa ---- */
   block.addEventListener("click", e => {
     e.stopPropagation(); hitBlock();
-    if (!scale._out){ scale._out = true; emergeFrom(scale, block); return; }   // prioridade: balança escondida volta
+    if (!glass._out){ glass._out = true; emergeFrom(glass, block); return; }   // prioridade: balança/vidro escondidos voltam
     const next = queue.find(it => !it._out);
     if (next){ next._out = true; emergeFrom(next, block); }
   });
@@ -1659,7 +1664,7 @@ body.in-chapter .help-btn{display:grid}
   function reset(){
     onScale.clear(); valEl.textContent = "0.00";
     queue.forEach(el => { el._out=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
-    scale._out=true; scale.classList.add("out"); scale.style.transition="none"; scale._dx=0; scale._dy=0; scale._scale=1; scale.style.transform=""; scale.style.opacity="";
+    glass._out=true; glass.classList.add("out"); glass.style.transition="none"; glass._dx=0; glass._dy=0; glass._scale=1; glass.style.transform=""; glass.style.opacity="";
   }
   document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
 })();

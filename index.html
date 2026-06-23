@@ -1,0 +1,1407 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#070a17">
+<title>Modelos Atômicos — Uma jornada interativa pela história do átomo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   MODELOS ATÔMICOS — ESTRUTURA GERAL DO APP (slides interativos)
+   Autor do conteúdo: Prof. Amauri Junior
+   ------------------------------------------------------------
+   ÍNDICE DESTE ARQUIVO
+   1. Tokens de design / tema            (:root)
+   2. Fundo atômico animado              (.atom-field / .atom)
+   3. CAPA                               (#cover)
+   4. BARALHO DE CAPÍTULOS (cartas)      (#deck)
+   5. MOTOR DE SLIDES (chrome + slide)   (.chapter / .slide / .fragment)
+   6. CONTEÚDO DOS CAPÍTULOS (HTML)      (section.chapter — SÓ a capa)
+   7. LÓGICA (JS) no final do arquivo
+   ============================================================ */
+
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  /* base espacial */
+  --bg-0:#05070f;
+  --bg-1:#0a0e1d;
+  --bg-2:#111733;
+  --ink:#eef2ff;
+  --ink-2:#aab4d4;
+  --ink-mute:#67708f;
+  --line:rgba(255,255,255,.10);
+  --glass:rgba(255,255,255,.045);
+  --glass-2:rgba(255,255,255,.08);
+
+  /* acento global (capa/baralho) */
+  --accent:#46e6ff;
+  --accent-2:#7c5cff;
+
+  --ff-display:'Space Grotesk','Segoe UI',system-ui,sans-serif;
+  --ff-body:'Inter','Segoe UI',system-ui,sans-serif;
+  --ff-mono:'JetBrains Mono','Consolas',monospace;
+
+  --ease:cubic-bezier(.22,1,.36,1);
+}
+
+/* paletas por capítulo (aplicadas via .theme-N) */
+.theme-1{--accent:#22d3ee;--accent-2:#0ea5b7}
+.theme-2{--accent:#a78bfa;--accent-2:#7c3aed}
+.theme-3{--accent:#fbbf24;--accent-2:#f97316}
+.theme-4{--accent:#fde047;--accent-2:#84cc16}
+.theme-5{--accent:#fb7185;--accent-2:#e11d48}
+.theme-6{--accent:#60a5fa;--accent-2:#4f46e5}
+
+html,body{height:100%}
+body{
+  background:radial-gradient(120% 120% at 50% -10%,var(--bg-2) 0%,var(--bg-1) 38%,var(--bg-0) 100%);
+  color:var(--ink);
+  font-family:var(--ff-body);
+  overflow:hidden;
+  position:fixed;inset:0;
+  -webkit-tap-highlight-color:transparent;
+  -webkit-user-select:none;user-select:none;
+  touch-action:none;
+}
+
+/* ---- views (telas) ---- */
+.view{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .55s var(--ease);z-index:1}
+.view.active{opacity:1;visibility:visible;z-index:2}
+
+/* ============================================================
+   2. FUNDO ATÔMICO ANIMADO
+   ============================================================ */
+.atom-field{position:absolute;inset:0;z-index:0;pointer-events:none}
+.atom-field canvas{position:absolute;inset:0;width:100%;height:100%}
+.grid-bg{position:absolute;inset:0;z-index:0;pointer-events:none;
+  background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);
+  background-size:54px 54px;
+  -webkit-mask-image:radial-gradient(120% 90% at 50% 30%,#000 30%,transparent 80%);
+          mask-image:radial-gradient(120% 90% at 50% 30%,#000 30%,transparent 80%);
+  opacity:.5}
+
+/* átomo (núcleo + órbitas + elétrons) — reutilizável */
+.atom{position:relative;width:var(--atom,200px);height:var(--atom,200px);display:grid;place-items:center}
+.atom .nucleus{position:absolute;width:18%;height:18%;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#fff,var(--accent) 55%,var(--accent-2));
+  box-shadow:0 0 24px var(--accent),0 0 60px var(--accent-2)}
+.atom .orbit{position:absolute;inset:0;border:1.5px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:50%}
+.atom .orbit:nth-child(1){transform:rotate(0deg) scaleY(.42)}
+.atom .orbit:nth-child(2){transform:rotate(60deg) scaleY(.42)}
+.atom .orbit:nth-child(3){transform:rotate(120deg) scaleY(.42)}
+.atom .electron{position:absolute;width:8%;height:8%;border-radius:50%;background:#fff;
+  box-shadow:0 0 12px var(--accent),0 0 22px var(--accent);top:50%;left:50%;margin:-4% 0 0 -4%}
+.atom .e1{animation:orbit 3.6s linear infinite}
+.atom .e2{animation:orbit 5.2s linear infinite reverse}
+.atom .e3{animation:orbit 4.4s linear infinite}
+@keyframes orbit{
+  from{transform:rotate(0deg) translateX(46%) rotate(0deg)}
+  to{transform:rotate(360deg) translateX(46%) rotate(-360deg)}
+}
+.atom.spin .orbit{animation:tilt 18s linear infinite}
+@keyframes tilt{to{transform:rotate(360deg)}}
+
+@media (prefers-reduced-motion:reduce){
+  .atom *{animation:none!important}
+}
+
+/* ============================================================
+   3. CAPA
+   ============================================================ */
+#cover{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:6vh 24px}
+.cover-inner{position:relative;z-index:3;display:flex;flex-direction:column;align-items:center;max-width:880px}
+.cover-atom{--atom:clamp(150px,30vh,240px);margin-bottom:18px;filter:drop-shadow(0 20px 60px rgba(70,230,255,.25))}
+.cover-eyebrow{display:flex;align-items:center;gap:12px;margin-bottom:18px;
+  font-family:var(--ff-mono);font-size:clamp(10px,1.4vw,12px);letter-spacing:4px;text-transform:uppercase;color:var(--accent)}
+.cover-eyebrow .ln{width:38px;height:1px;background:linear-gradient(90deg,transparent,var(--accent))}
+.cover-eyebrow .ln:last-child{background:linear-gradient(90deg,var(--accent),transparent)}
+.cover-title{font-family:var(--ff-display);font-weight:700;line-height:.94;letter-spacing:-2px;
+  font-size:clamp(44px,9vw,104px);
+  background:linear-gradient(180deg,#fff 35%,#9fd9ff 75%,var(--accent));
+  -webkit-background-clip:text;background-clip:text;color:transparent;margin-bottom:6px}
+.cover-sub{font-family:var(--ff-display);font-weight:400;font-size:clamp(15px,2.6vw,24px);color:var(--ink-2);letter-spacing:.3px}
+.cover-rule{width:min(420px,70vw);height:1px;background:linear-gradient(90deg,transparent,var(--line),transparent);margin:26px 0 18px}
+.cover-author{font-family:var(--ff-mono);font-size:clamp(11px,1.6vw,13px);color:var(--ink-mute);letter-spacing:1px}
+.cover-author b{color:var(--ink);font-weight:500}
+
+.btn-start{margin-top:38px;position:relative;cursor:pointer;border:none;
+  font-family:var(--ff-display);font-weight:600;font-size:clamp(15px,2.2vw,18px);letter-spacing:1px;
+  color:#04121a;padding:18px 46px;border-radius:999px;
+  background:linear-gradient(180deg,#bff4ff,var(--accent));
+  box-shadow:0 0 0 1px rgba(255,255,255,.25),0 14px 40px rgba(70,230,255,.35);
+  transition:transform .25s var(--ease),box-shadow .25s var(--ease);
+  display:inline-flex;align-items:center;gap:12px}
+.btn-start:hover{transform:translateY(-3px);box-shadow:0 0 0 1px rgba(255,255,255,.4),0 22px 56px rgba(70,230,255,.5)}
+.btn-start:active{transform:translateY(0) scale(.98)}
+.btn-start .arrow{font-size:1.1em;transition:transform .25s var(--ease)}
+.btn-start:hover .arrow{transform:translateX(5px)}
+.btn-start::after{content:"";position:absolute;inset:-2px;border-radius:999px;border:1px solid var(--accent);opacity:.6;animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{transform:scale(1);opacity:.6}100%{transform:scale(1.35);opacity:0}}
+
+/* ============================================================
+   4. BARALHO DE CAPÍTULOS (cartas arrastáveis — coverflow)
+   ============================================================ */
+#deck{display:flex;flex-direction:column}
+.deck-head{position:relative;z-index:3;text-align:center;padding:max(4vh,26px) 20px 0}
+.deck-head .kicker{font-family:var(--ff-mono);font-size:11px;letter-spacing:4px;text-transform:uppercase;color:var(--accent)}
+.deck-head h2{font-family:var(--ff-display);font-weight:600;font-size:clamp(22px,4.5vw,34px);margin-top:8px;letter-spacing:-1px}
+.deck-head p{color:var(--ink-mute);font-size:clamp(12px,2vw,14px);margin-top:6px}
+
+.deck-stage{position:relative;z-index:3;flex:1;perspective:1600px;touch-action:none}
+.cards{position:absolute;inset:0;transform-style:preserve-3d}
+.card{
+  position:absolute;top:50%;left:50%;width:min(70vw,290px);height:min(64vh,440px);
+  margin:0;border-radius:24px;cursor:grab;
+  transform-origin:center;will-change:transform;
+  background:
+    radial-gradient(120% 80% at 50% -10%,color-mix(in srgb,var(--accent) 28%,transparent),transparent 60%),
+    linear-gradient(180deg,var(--glass-2),var(--glass));
+  border:1px solid var(--line);
+  box-shadow:0 30px 80px rgba(0,0,0,.55),inset 0 1px 0 rgba(255,255,255,.12);
+  backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+  overflow:hidden;display:flex;flex-direction:column;
+}
+.card::before{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg,transparent 55%,color-mix(in srgb,var(--accent-2) 22%,transparent));pointer-events:none}
+.card .card-accent{position:absolute;top:0;left:0;right:0;height:5px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.card .card-roman{position:absolute;top:14px;right:18px;font-family:var(--ff-display);font-weight:700;
+  font-size:clamp(54px,12vw,84px);line-height:1;color:color-mix(in srgb,var(--accent) 22%,transparent);letter-spacing:-3px}
+.card .card-atom{--atom:clamp(84px,22vw,120px);margin:34px auto 0;z-index:1}
+.card .card-body{margin-top:auto;padding:22px 22px 24px;position:relative;z-index:1}
+.card .card-cap{font-family:var(--ff-mono);font-size:11px;letter-spacing:3px;text-transform:uppercase;color:var(--accent)}
+.card .card-title{font-family:var(--ff-display);font-weight:600;font-size:clamp(18px,4.4vw,23px);line-height:1.12;margin-top:8px;letter-spacing:-.5px}
+.card .card-desc{color:var(--ink-2);font-size:clamp(12px,2.6vw,13.5px);line-height:1.45;margin-top:10px;min-height:2.6em}
+.card .card-enter{margin-top:16px;display:inline-flex;align-items:center;gap:8px;align-self:flex-start;
+  font-family:var(--ff-display);font-weight:600;font-size:14px;color:#06121a;
+  background:linear-gradient(180deg,#fff,var(--accent));border:none;border-radius:999px;padding:11px 20px;cursor:pointer;
+  box-shadow:0 8px 24px color-mix(in srgb,var(--accent) 40%,transparent);transition:transform .2s var(--ease)}
+.card.is-center .card-enter{animation:enterBob 2s ease-in-out infinite}
+@keyframes enterBob{50%{transform:translateY(-3px)}}
+.card:not(.is-center){pointer-events:none}
+.card:not(.is-center) .card-enter{visibility:hidden}
+
+.deck-dots{position:relative;z-index:3;display:flex;gap:9px;justify-content:center;padding:14px 0 max(3vh,18px)}
+.deck-dots button{width:9px;height:9px;border-radius:50%;border:none;background:var(--line);cursor:pointer;transition:.25s var(--ease);padding:0}
+.deck-dots button.on{width:26px;border-radius:6px;background:linear-gradient(90deg,var(--accent),var(--accent-2))}
+.deck-hint{position:absolute;left:0;right:0;bottom:max(8.5vh,72px);text-align:center;z-index:3;color:var(--ink-mute);
+  font-family:var(--ff-mono);font-size:11px;letter-spacing:1px;pointer-events:none;opacity:.8}
+.deck-hint .swipe{display:inline-block;animation:swipeHint 2.6s ease-in-out infinite}
+@keyframes swipeHint{0%,100%{transform:translateX(-6px)}50%{transform:translateX(6px)}}
+
+/* ============================================================
+   5. MOTOR DE SLIDES — "chrome" + slide + fragmentos
+   ============================================================ */
+.chapter{position:absolute;inset:0;opacity:0;visibility:hidden;transition:opacity .5s var(--ease);z-index:1}
+.chapter.active{opacity:1;visibility:visible;z-index:5}
+
+/* barra superior */
+.bar{position:absolute;top:0;left:0;right:0;z-index:20;display:flex;align-items:center;gap:14px;
+  padding:max(env(safe-area-inset-top),14px) 18px 14px;
+  background:linear-gradient(180deg,rgba(5,7,15,.85),transparent)}
+.bar .back{display:inline-flex;align-items:center;gap:8px;background:var(--glass-2);border:1px solid var(--line);
+  color:var(--ink);font-family:var(--ff-display);font-weight:500;font-size:13px;border-radius:999px;padding:9px 16px;cursor:pointer}
+.bar .back:active{transform:scale(.96)}
+.bar .bar-label{font-family:var(--ff-mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--accent)}
+.bar .bar-title{font-family:var(--ff-display);font-weight:600;font-size:14px;color:var(--ink);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bar .spacer{flex:1}
+.bar .counter{font-family:var(--ff-mono);font-size:12px;color:var(--ink-mute)}
+
+/* barra de progresso fininha no topo */
+.progress{position:absolute;top:0;left:0;height:3px;width:0;z-index:21;
+  background:linear-gradient(90deg,var(--accent),var(--accent-2));transition:width .4s var(--ease)}
+
+/* palco dos slides */
+.stage{position:absolute;inset:0;z-index:10;touch-action:none}
+.slide{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  padding:clamp(64px,9vh,110px) clamp(20px,5vw,64px) clamp(70px,9vh,100px);
+  visibility:hidden;opacity:0;transform:translateX(0);will-change:transform;
+  transition:transform .25s var(--ease)}
+.slide.current{visibility:visible;opacity:1}   /* página em foco */
+.slide.leaving{visibility:visible;opacity:1}   /* página saindo (durante a transição) */
+
+/* ---------- SLIDE 2 (As Reações Químicas) ---------- */
+.s2-top{position:absolute;top:clamp(58px,9vh,92px);left:0;right:0;text-align:center;padding:0 20px}
+.s2-title{font-family:var(--ff-display);font-weight:700;line-height:1.05;letter-spacing:-1px;text-align:center;
+  font-size:clamp(28px,5vw,54px);max-width:22ch;display:inline-block;
+  background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));
+  -webkit-background-clip:text;background-clip:text;color:transparent}
+.s2-title .hl{-webkit-text-fill-color:var(--accent);color:var(--accent)}
+/* "lab" centralizado por um wrapper (transform livre p/ animação e gestos) */
+.s2-labwrap{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:7;pointer-events:none}
+.s2-lab-host{display:inline-block}                 /* alvo do tremor/pulso da reação */
+.s2-lab-host.reacting{animation:labReact .5s ease-in-out infinite}
+@keyframes labReact{
+  0%{transform:translate(0,0) rotate(0deg) scale(1)}
+  20%{transform:translate(-5px,3px) rotate(-2.5deg) scale(1.05)}
+  40%{transform:translate(5px,-3px) rotate(2.5deg) scale(.98)}
+  60%{transform:translate(-4px,-2px) rotate(-2deg) scale(1.06)}
+  80%{transform:translate(4px,2px) rotate(2deg) scale(1)}
+  100%{transform:translate(0,0) rotate(0deg) scale(1)}
+}
+.s2-lab{width:min(440px,52vw);height:auto;pointer-events:auto;touch-action:none;cursor:grab;
+  opacity:0;visibility:hidden;transform:translate(0,0);filter:drop-shadow(0 14px 26px rgba(0,0,0,.5))}
+.s2-lab.out{opacity:1;visibility:visible}
+/* fumaça colorida (camada no centro do lab) */
+.s2-fx{position:absolute;left:50%;top:50%;width:0;height:0;z-index:9;pointer-events:none}
+.smoke{position:absolute;left:0;top:0;border-radius:50%;filter:blur(3px);will-change:transform,opacity;
+  animation:smokePuff 1.3s ease-out forwards}
+@keyframes smokePuff{
+  0%{transform:translate(-50%,-50%) scale(.3);opacity:0}
+  18%{opacity:.85}
+  100%{transform:translate(calc(-50% + var(--sx)),calc(-50% + var(--sy))) scale(2);opacity:0}
+}
+/* produtos (imagens: alumínio / ferro / cobre) que saem do lab */
+.s2-results{position:absolute;left:0;right:0;top:clamp(108px,16vh,158px);z-index:8;
+  display:flex;justify-content:center;flex-wrap:wrap;gap:20px;padding:0 20px;pointer-events:none}
+.s2-result{pointer-events:auto;margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:grab;touch-action:none;
+  opacity:0;visibility:hidden;transform:translate(0,0)}
+.s2-result.out{opacity:1;visibility:visible}
+.s2-result img{width:clamp(100px,15vw,150px);height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.s2-result figcaption{font-family:var(--ff-display);font-weight:700;font-size:clamp(13px,2.2vw,17px);color:var(--ink);letter-spacing:.3px;text-align:center}
+/* coluna de minérios na borda esquerda */
+.s2-mincol{position:absolute;left:clamp(14px,3vw,40px);top:clamp(118px,20vh,172px);z-index:6;
+  display:flex;flex-direction:column;gap:14px;align-items:flex-start}
+.s2-min{margin:0;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:grab;touch-action:none;
+  opacity:0;visibility:hidden;transform:translate(0,0)}
+.s2-min.out{opacity:1;visibility:visible}
+.s2-min img{width:clamp(94px,15vw,150px);height:auto;filter:drop-shadow(0 8px 14px rgba(0,0,0,.5))}
+.s2-min figcaption{font-family:var(--ff-display);font-weight:600;font-size:clamp(12px,2vw,15px);color:var(--ink-2);letter-spacing:.3px;text-align:center}
+/* definição da reação química — 1º elemento a sair do bloco "?" */
+.s2-def{position:absolute;right:calc(clamp(16px,3vw,46px) + clamp(94px,13vw,140px) + 16px);top:calc(50% - 44px);z-index:10;
+  width:max-content;max-width:min(50vw,360px);cursor:grab;touch-action:none;
+  font-family:var(--ff-display);font-weight:500;font-size:clamp(13px,2.3vw,18px);line-height:1.45;color:var(--ink);
+  background:var(--glass-2);border:1px solid var(--line);border-left:4px solid var(--accent);border-radius:12px;padding:14px 20px;
+  box-shadow:0 14px 38px rgba(0,0,0,.45);
+  opacity:0;visibility:hidden;transform:translate(0,0)}
+.s2-def.out{opacity:1;visibility:visible}
+.s2-def b{color:var(--accent);font-weight:700}
+
+/* fragmentos = EVENTOS NÃO INTERATIVOS (revelados pelo passador/toque/seta) */
+.fragment{opacity:0;transform:translateY(14px);transition:opacity .5s var(--ease),transform .5s var(--ease)}
+.fragment.revealed{opacity:1;transform:none}
+.fragment[data-anim="zoom"]{transform:scale(.9)}
+.fragment[data-anim="zoom"].revealed{transform:scale(1)}
+.fragment[data-anim="left"]{transform:translateX(-28px)}
+.fragment[data-anim="left"].revealed{transform:none}
+.fragment[data-anim="right"]{transform:translateX(28px)}
+.fragment[data-anim="right"].revealed{transform:none}
+
+/* EVENTOS INTERATIVOS = o aluno toca / arrasta (não disparados pelo passador) */
+[data-interactive]{cursor:pointer;touch-action:auto}
+[data-interactive].needs-touch{outline:2px dashed color-mix(in srgb,var(--accent) 60%,transparent);outline-offset:6px;border-radius:12px;
+  animation:needTouch 1.6s ease-in-out infinite}
+@keyframes needTouch{50%{outline-color:var(--accent)}}
+
+/* setas de navegação na tela */
+.nav-arrow{position:absolute;bottom:max(env(safe-area-inset-bottom),20px);z-index:20;width:52px;height:52px;border-radius:50%;
+  background:var(--glass-2);border:1px solid var(--line);color:var(--ink);font-size:22px;cursor:pointer;
+  display:grid;place-items:center;backdrop-filter:blur(8px);transition:.2s var(--ease)}
+.nav-arrow:active{transform:scale(.92)}
+.nav-arrow.prev{left:18px}
+.nav-arrow.next{right:18px;width:auto;height:48px;padding:0 22px;border-radius:999px;
+  font-family:var(--ff-display);font-weight:600;font-size:15px;letter-spacing:.3px;
+  background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 90%,#fff),var(--accent));color:#06121a;border-color:transparent;
+  box-shadow:0 10px 28px color-mix(in srgb,var(--accent) 35%,transparent)}
+.nav-arrow[disabled]{opacity:.3;pointer-events:none}
+
+/* pontinhos de slide do capítulo */
+.slide-dots{position:absolute;bottom:max(env(safe-area-inset-bottom),26px);left:50%;transform:translateX(-50%);z-index:20;
+  display:flex;gap:7px;align-items:center}
+.slide-dots i{width:7px;height:7px;border-radius:50%;background:var(--line);transition:.25s var(--ease)}
+.slide-dots i.on{width:22px;border-radius:5px;background:var(--accent)}
+
+/* ---------- CAPA DO CAPÍTULO (página inicial) ---------- */
+.chapter-cover{flex-direction:column;text-align:center}
+.cc-atom{--atom:clamp(140px,26vh,220px);margin-bottom:26px;filter:drop-shadow(0 18px 50px color-mix(in srgb,var(--accent) 35%,transparent))}
+.cc-roman{font-family:var(--ff-display);font-weight:700;font-size:clamp(14px,2.4vw,18px);letter-spacing:6px;color:var(--accent);text-transform:uppercase;margin-bottom:14px}
+.cc-roman::before,.cc-roman::after{content:"";display:inline-block;width:34px;height:1px;vertical-align:middle;margin:0 14px;background:var(--accent);opacity:.6}
+.cc-title{font-family:var(--ff-display);font-weight:700;line-height:1;letter-spacing:-2px;font-size:clamp(34px,7.5vw,76px);
+  background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 70%,#fff));-webkit-background-clip:text;background-clip:text;color:transparent;max-width:14ch}
+.cc-sub{margin-top:18px;color:var(--ink-2);font-family:var(--ff-display);font-weight:400;font-size:clamp(14px,2.6vw,20px);max-width:30ch}
+.cc-start-hint{margin-top:40px;display:inline-flex;align-items:center;gap:10px;color:var(--ink-mute);
+  font-family:var(--ff-mono);font-size:12px;letter-spacing:1px}
+.cc-start-hint .dot{width:8px;height:8px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent);animation:blink 1.6s ease-in-out infinite}
+@keyframes blink{50%{opacity:.25}}
+
+/* ---------- CAPÍTULO I · slide 1 (pergunta de abertura) ---------- */
+.s1-top{position:absolute;top:clamp(58px,8vh,82px);left:0;right:0;text-align:center;padding:0 20px;animation:rise .6s var(--ease) both}
+.s1-cap{display:inline-block;font-family:var(--ff-display);font-weight:700;letter-spacing:6px;text-transform:uppercase;
+  font-size:clamp(11px,2vw,16px);color:var(--accent)}
+.s1-cap::before,.s1-cap::after{content:"";display:inline-block;width:30px;height:1px;vertical-align:middle;margin:0 13px;background:var(--accent);opacity:.6}
+.s1-sub{display:block;margin-top:9px;font-family:var(--ff-display);font-weight:400;font-size:clamp(13px,2.4vw,19px);color:var(--ink-2);letter-spacing:.3px}
+.s1-question{font-family:var(--ff-display);font-weight:700;line-height:1.08;letter-spacing:-1px;text-align:center;
+  margin:clamp(20px,3.5vh,34px) auto 0;font-size:clamp(16px,3.4vw,35px);max-width:24ch;
+  background:linear-gradient(180deg,#fff,color-mix(in srgb,var(--accent) 60%,#fff));
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:rise .75s .1s var(--ease) both}
+.s1-question .hl{-webkit-text-fill-color:var(--accent);color:var(--accent)}
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+
+/* bloco de interrogação ("? block", borda direita, sempre visível) */
+.qblock{position:absolute;right:clamp(16px,3vw,46px);top:50%;transform:translateY(-50%);
+  width:clamp(94px,13vw,140px);height:clamp(94px,13vw,140px);z-index:9;cursor:pointer;padding:0;border:none;
+  border-radius:16px;display:grid;place-items:center;
+  background:linear-gradient(150deg,#ffd83f 0%,#fbbf12 55%,#e89400 100%);
+  box-shadow:inset 0 5px 0 rgba(255,255,255,.55),inset 0 -7px 0 rgba(150,88,0,.5),
+             inset 7px 0 0 rgba(255,255,255,.18),inset -7px 0 0 rgba(150,88,0,.3),
+             0 16px 40px rgba(0,0,0,.5);
+  animation:qbob 2.8s ease-in-out infinite}
+@keyframes qbob{0%,100%{transform:translateY(-50%)}50%{transform:translateY(calc(-50% - 7px))}}
+.qblock.hit{animation:qhit .42s var(--ease)}
+@keyframes qhit{0%{transform:translateY(-50%)}28%{transform:translateY(calc(-50% - 15px))}100%{transform:translateY(-50%)}}
+.qblock .qmark{font-family:var(--ff-display);font-weight:700;font-size:clamp(50px,8vw,82px);color:#fffdf5;line-height:1;
+  text-shadow:0 3px 0 #c87f00,0 5px 7px rgba(0,0,0,.35)}
+.qblock .rivet{position:absolute;width:11px;height:11px;border-radius:50%;
+  background:radial-gradient(circle at 35% 30%,#ffe98a,#c98700);box-shadow:inset 0 1px 2px rgba(120,70,0,.6)}
+.qblock .rivet.tl{top:10px;left:10px}.qblock .rivet.tr{top:10px;right:10px}
+.qblock .rivet.bl{bottom:10px;left:10px}.qblock .rivet.br{bottom:10px;right:10px}
+
+/* "Ciência" + definições — o chip e cada definição arrastam individualmente */
+.ci-group{position:absolute;right:calc(clamp(16px,3vw,46px) + clamp(94px,13vw,140px) + 16px);top:calc(50% - 36px);z-index:10;
+  display:flex;flex-direction:column;gap:12px;align-items:flex-end;width:max-content;max-width:min(52vw,380px)}
+.ci-chip{display:inline-flex;align-items:center;padding:14px 26px;border-radius:14px;cursor:grab;touch-action:none;
+  opacity:0;visibility:hidden;transform:translate(0,0);
+  background:linear-gradient(140deg,color-mix(in srgb,var(--accent) 32%,transparent),var(--glass-2));
+  border:1px solid var(--line);border-left:4px solid var(--accent);box-shadow:0 14px 38px rgba(0,0,0,.45)}
+.ci-chip.out{opacity:1;visibility:visible}
+.ci-chip:active{cursor:grabbing}
+.ci-label{font-family:var(--ff-display);font-weight:700;font-size:clamp(22px,4vw,32px);
+  background:linear-gradient(180deg,#fff,var(--accent));-webkit-background-clip:text;background-clip:text;color:transparent}
+.ci-defs{display:flex;flex-direction:column;gap:10px}
+.ci-def{font-family:var(--ff-display);font-weight:500;font-size:clamp(14px,2.5vw,19px);color:var(--ink);touch-action:none;
+  background:var(--glass-2);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:10px;padding:10px 18px;
+  opacity:0;transform:translateX(-30px) scale(.92);transition:opacity .4s var(--ease),transform .4s var(--ease)}
+.ci-def.show{opacity:1;transform:none;cursor:grab}
+.ci-def.show:active{cursor:grabbing}
+.ci-def b{color:var(--accent);margin-right:6px}
+
+/* carrossel coverflow (centralizado por um wrapper) */
+.ci-carousel-wrap{position:absolute;left:0;right:0;bottom:clamp(40px,8vh,84px);z-index:6;
+  display:flex;justify-content:center;pointer-events:none}
+.ci-carousel{position:relative;width:min(640px,80vw);height:clamp(150px,30vh,230px);perspective:1100px;
+  pointer-events:auto;opacity:0;visibility:hidden;touch-action:none;
+  transition:transform .55s var(--ease),opacity .45s var(--ease)}
+.ci-carousel.out{opacity:1;visibility:visible}
+.ci-track{position:absolute;inset:0;transform-style:preserve-3d}
+.ci-card{position:absolute;top:50%;left:50%;width:clamp(150px,26vw,224px);height:100%;margin:0;
+  border-radius:18px;display:grid;place-items:center;cursor:grab;will-change:transform;overflow:hidden;
+  background:linear-gradient(160deg,var(--glass-2),var(--glass));border:1px solid var(--line);
+  box-shadow:0 22px 54px rgba(0,0,0,.5);
+  font-family:var(--ff-mono);color:var(--ink-2);font-size:14px;letter-spacing:1px}
+.ci-card img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+
+/* o "chrome" dos capítulos só aparece dentro de um capítulo */
+.bar,.progress,.nav-arrow,.slide-dots,.end-flag,.help-btn{display:none}
+body.in-chapter .bar,body.in-chapter .progress,body.in-chapter .nav-arrow,
+body.in-chapter .slide-dots,body.in-chapter .end-flag{display:flex}
+body.in-chapter .progress{display:block}
+
+/* overlay de ajuda (controles) */
+.help-btn{position:absolute;top:max(env(safe-area-inset-top),14px);right:18px;z-index:30}
+body.in-chapter .help-btn{display:grid}
+.help-btn{width:34px;height:34px;border-radius:50%;background:var(--glass-2);border:1px solid var(--line);color:var(--ink-2);place-items:center;cursor:pointer;font-family:var(--ff-display)}
+#help{position:absolute;inset:0;z-index:40;background:rgba(5,7,15,.8);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:24px}
+#help.open{display:flex}
+.help-card{max-width:440px;width:100%;background:linear-gradient(180deg,var(--glass-2),var(--glass));border:1px solid var(--line);border-radius:22px;padding:28px}
+.help-card h3{font-family:var(--ff-display);font-size:20px;margin-bottom:6px}
+.help-card p{color:var(--ink-mute);font-size:13px;margin-bottom:18px}
+.help-card .row{display:flex;justify-content:space-between;gap:16px;padding:11px 0;border-top:1px solid var(--line);font-size:13.5px}
+.help-card .row span:first-child{color:var(--ink-2)}
+.help-card kbd{font-family:var(--ff-mono);font-size:11px;background:var(--glass-2);border:1px solid var(--line);border-radius:6px;padding:3px 7px;margin-left:5px}
+.help-card .close{margin-top:22px;width:100%;border:none;border-radius:12px;padding:13px;cursor:pointer;
+  font-family:var(--ff-display);font-weight:600;background:linear-gradient(180deg,#fff,var(--accent));color:#06121a}
+
+/* badge "fim do capítulo" */
+.end-flag{position:absolute;left:50%;bottom:max(env(safe-area-inset-bottom),84px);transform:translateX(-50%);z-index:20;
+  font-family:var(--ff-mono);font-size:11px;letter-spacing:2px;text-transform:uppercase;color:var(--ink-mute);
+  background:var(--glass-2);border:1px solid var(--line);border-radius:999px;padding:8px 16px;opacity:0;transition:.3s var(--ease)}
+.end-flag.show{opacity:1}
+
+/* "ver dentro do lab" — overlay com fundo borrado/escuro + zoom */
+.lab-view{position:fixed;inset:0;z-index:70;display:none;align-items:center;justify-content:center;padding:24px;
+  background:rgba(3,5,12,.62);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px)}
+.lab-view.open{display:flex;animation:labViewIn .35s var(--ease)}
+@keyframes labViewIn{from{opacity:0}to{opacity:1}}
+@keyframes labViewOut{from{opacity:1}to{opacity:0}}
+.lab-view-stage{display:inline-flex;animation:labZoomIn .45s var(--ease)}   /* zoom de abrir/fechar */
+.lab-view-img{max-width:min(88vw,940px);max-height:84vh;border-radius:16px;touch-action:none;cursor:grab;
+  box-shadow:0 30px 90px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.08)}
+.lab-view-img:active{cursor:grabbing}
+@keyframes labZoomIn{from{transform:scale(.35);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes labZoomOut{from{transform:scale(1);opacity:1}to{transform:scale(.35);opacity:0}}
+.lab-view-close{position:absolute;top:max(env(safe-area-inset-top),18px);right:18px;z-index:2;
+  width:46px;height:46px;border-radius:50%;border:1px solid var(--line);background:var(--glass-2);color:var(--ink);
+  font-size:19px;cursor:pointer;display:grid;place-items:center;backdrop-filter:blur(8px);transition:.2s var(--ease)}
+.lab-view-close:active{transform:scale(.92)}
+
+/* versão do app (canto inferior esquerdo) */
+.app-version{position:fixed;left:13px;bottom:10px;z-index:60;pointer-events:none;
+  font-family:var(--ff-mono);font-size:11px;letter-spacing:1px;color:var(--ink-mute);opacity:.6}
+</style>
+</head>
+<body>
+
+<!-- fundo global animado -->
+<div class="atom-field" aria-hidden="true"><canvas id="bg"></canvas></div>
+<div class="grid-bg" aria-hidden="true"></div>
+
+<!-- VERSÃO — incrementar a cada mudança -->
+<div class="app-version" aria-hidden="true">v1.1.7</div>
+
+<!-- ============================================================
+     3. CAPA
+     ============================================================ -->
+<section id="cover" class="view active">
+  <div class="cover-inner">
+    <div class="atom spin cover-atom" aria-hidden="true">
+      <div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+      <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div>
+      <div class="nucleus"></div>
+    </div>
+    <div class="cover-eyebrow"><span class="ln"></span>Química · Ensino Médio<span class="ln"></span></div>
+    <h1 class="cover-title">Modelos Atômicos</h1>
+    <p class="cover-sub">Uma jornada interativa pela história do átomo</p>
+    <div class="cover-rule"></div>
+    <p class="cover-author">Designed by <b>Prof. Amauri Junior</b></p>
+    <button class="btn-start" id="btnStart">Iniciar <span class="arrow">→</span></button>
+  </div>
+</section>
+
+<!-- ============================================================
+     4. BARALHO DE CAPÍTULOS
+     As cartas são geradas por JS a partir de CHAPTERS (ver script).
+     ============================================================ -->
+<section id="deck" class="view">
+  <div class="deck-head">
+    <div class="kicker">Escolha um capítulo</div>
+    <h2>A história do átomo</h2>
+    <p>Arraste as cartas e toque em <b>Entrar</b> para começar</p>
+  </div>
+  <div class="deck-stage" id="deckStage">
+    <div class="cards" id="cards"></div>
+  </div>
+  <div class="deck-hint"><span class="swipe">⟵ arraste ⟶</span></div>
+  <div class="deck-dots" id="deckDots"></div>
+</section>
+
+<!-- ============================================================
+     5./6. CAPÍTULOS
+     Cada <section class="chapter"> tem 1 ou mais <article class="slide">.
+     AQUI EXISTE APENAS A CAPA (1º slide) de cada capítulo.
+     Para criar os demais slides, copie o BLOCO MODELO comentado
+     logo abaixo do primeiro capítulo.
+     ============================================================ -->
+<div id="chapters">
+
+  <!-- ░░░░░░░░░░ CAPÍTULO I ░░░░░░░░░░ -->
+  <section class="chapter theme-1" id="cap-1" data-roman="I" data-title="Introdução à Química">
+    <!-- ░░ SLIDE 1 — pergunta de abertura ░░ -->
+    <article class="slide current">
+      <div class="s1-top">
+        <span class="s1-cap">Capítulo I</span>
+        <span class="s1-sub">Introdução à Química</span>
+        <h2 class="s1-question" data-manip>Você sabe o que é a <span class="hl">Química</span>?</h2>
+      </div>
+
+      <!-- BLOCO DE INTERROGAÇÃO (sempre visível, borda direita).
+           Clicar => "Ciência" sai de dentro dele para a esquerda. -->
+      <button class="qblock" id="qBlock" data-interactive aria-label="Revelar Ciência">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <span class="rivet bl"></span><span class="rivet br"></span>
+        <span class="qmark">?</span>
+      </button>
+
+      <!-- GRUPO ARRASTÁVEL: "Ciência" + definições.
+           Toque revela/recolhe os textos; arraste para mover;
+           arraste de volta ao bloco para esconder tudo. -->
+      <div class="ci-group" id="ciGroup" data-interactive data-nohint>
+        <div class="ci-chip" id="ciChip" data-interactive data-nohint><span class="ci-label">Ciência</span></div>
+        <div class="ci-defs" id="ciDefs">
+          <div class="ci-def" data-interactive data-nohint><b>1.</b> Estuda a matéria</div>
+          <div class="ci-def" data-interactive data-nohint><b>2.</b> Materiais</div>
+          <div class="ci-def" data-interactive data-nohint><b>3.</b> Substâncias Químicas</div>
+        </div>
+      </div>
+
+      <!-- CARROSSEL: sai de dentro do bloco no 2º toque em "Ciência".
+           SUBSTITUA os src caso troque as imagens. -->
+      <div class="ci-carousel-wrap">
+        <div class="ci-carousel" id="ciCarousel" data-interactive data-nohint>
+          <div class="ci-track" id="ciTrack">
+            <figure class="ci-card"><img src="imagens/img1.png" alt="" onerror="this.style.display='none'"><span>img1</span></figure>
+            <figure class="ci-card"><img src="imagens/Img2.png" alt="" onerror="this.style.display='none'"><span>img2</span></figure>
+            <figure class="ci-card"><img src="imagens/Img3.png" alt="" onerror="this.style.display='none'"><span>img3</span></figure>
+            <figure class="ci-card"><img src="imagens/Img4.png" alt="" onerror="this.style.display='none'"><span>img4</span></figure>
+            <figure class="ci-card"><img src="imagens/Img5.png" alt="" onerror="this.style.display='none'"><span>img5</span></figure>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ░░ SLIDE 2 — As Reações Químicas ░░ -->
+    <article class="slide" data-noend>
+      <div class="s2-top">
+        <h2 class="s2-title" data-manip>As Reações <span class="hl">Químicas</span></h2>
+      </div>
+
+      <!-- bloco "?" (mesmo comportamento do slide 1).
+           1º clique => "lab" (cresce e para no centro);
+           próximos cliques => minério1, 2, 3 (borda esquerda, empilhados). -->
+      <button class="qblock" id="qBlock2" data-interactive aria-label="Revelar">
+        <span class="rivet tl"></span><span class="rivet tr"></span>
+        <span class="rivet bl"></span><span class="rivet br"></span>
+        <span class="qmark">?</span>
+      </button>
+
+      <!-- definição da reação química: 1º elemento que sai do bloco (arraste de volta p/ esconder) -->
+      <div class="s2-def" id="s2def"><b>Reação química:</b> é uma transformação em que um tipo de matéria dá origem a um novo tipo, diferente do original.</div>
+
+      <!-- "lab" sai do bloco, cresce e para no centro. Arraste um minério até ele:
+           o minério é sugado e o lab "reage" (tremor + fumaça) por 5s, soltando o produto. -->
+      <div class="s2-labwrap">
+        <div class="s2-fx" id="s2fx"></div>
+        <div class="s2-lab-host" id="s2labHost">
+          <img class="s2-lab" id="s2lab" src="imagens/lab.png" alt="laboratório">
+        </div>
+      </div>
+
+      <!-- minérios saem para a borda esquerda, um embaixo do outro (com o nome) -->
+      <div class="s2-mincol">
+        <figure class="s2-min" id="s2min1"><img src="imagens/minerio1.png" alt="minério 1"><figcaption>Bauxita</figcaption></figure>
+        <figure class="s2-min" id="s2min2"><img src="imagens/minerio2.png" alt="minério 2"><figcaption>Hematita</figcaption></figure>
+        <figure class="s2-min" id="s2min3"><img src="imagens/minerio3.png" alt="minério 3"><figcaption>Calcopirita</figcaption></figure>
+      </div>
+
+      <!-- produtos (imagens + nome) que saem do lab após a reação -->
+      <div class="s2-results">
+        <figure class="s2-result" id="s2res1"><img src="imagens/aluminio.png" alt="alumínio"><figcaption>Alumínio</figcaption></figure>
+        <figure class="s2-result" id="s2res2"><img src="imagens/ferro.png" alt="ferro"><figcaption>Ferro</figcaption></figure>
+        <figure class="s2-result" id="s2res3"><img src="imagens/cobre.png" alt="cobre"><figcaption>Cobre</figcaption></figure>
+      </div>
+    </article>
+
+    <!-- ===========================================================
+         BLOCO MODELO — copie um <article class="slide"> destes para
+         criar novos slides DESTE capítulo (cole após o slide acima).
+
+         • EVENTO NÃO INTERATIVO (revela ao avançar com passador/seta/toque):
+           <article class="slide">
+             <div>
+               <h3 class="fragment">Aparece no 1º clique</h3>
+               <p  class="fragment" data-anim="left">Aparece no 2º clique</p>
+               <img class="fragment" data-anim="zoom" src="...">
+             </div>
+           </article>
+           data-anim: (padrão sobe) | "zoom" | "left" | "right"
+
+         • EVENTO INTERATIVO (o aluno toca/arrasta — o passador NÃO dispara):
+           <button data-interactive onclick="Slides.done(this)">Toque aqui</button>
+           - Para travar o avanço até o aluno interagir, marque o passo:
+             <div class="fragment" data-interactive data-gate>...</div>
+             e chame Slides.done(elemento) quando concluir a interação.
+         =========================================================== -->
+  </section>
+
+  <!-- ░░░░░░░░░░ CAPÍTULO II ░░░░░░░░░░ -->
+  <section class="chapter theme-2" id="cap-2" data-roman="II" data-title="A gênese do átomo">
+    <article class="slide chapter-cover current">
+      <div class="atom spin cc-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+        <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+      <div class="cc-roman">Capítulo II</div>
+      <h2 class="cc-title">A gênese do átomo</h2>
+      <p class="cc-sub">Das ideias filosóficas gregas às primeiras noções de partícula indivisível.</p>
+      <span class="cc-start-hint"><span class="dot"></span> toque na tela ou use o passador para avançar</span>
+    </article>
+  </section>
+
+  <!-- ░░░░░░░░░░ CAPÍTULO III ░░░░░░░░░░ -->
+  <section class="chapter theme-3" id="cap-3" data-roman="III" data-title="O átomo e a Ciência">
+    <article class="slide chapter-cover current">
+      <div class="atom spin cc-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+        <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+      <div class="cc-roman">Capítulo III</div>
+      <h2 class="cc-title">O átomo e a Ciência</h2>
+      <p class="cc-sub">Quando o átomo encontrou o método científico — o modelo de Dalton.</p>
+      <span class="cc-start-hint"><span class="dot"></span> toque na tela ou use o passador para avançar</span>
+    </article>
+  </section>
+
+  <!-- ░░░░░░░░░░ CAPÍTULO IV ░░░░░░░░░░ -->
+  <section class="chapter theme-4" id="cap-4" data-roman="IV" data-title="A Eletricidade e o Átomo">
+    <article class="slide chapter-cover current">
+      <div class="atom spin cc-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+        <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+      <div class="cc-roman">Capítulo IV</div>
+      <h2 class="cc-title">A Eletricidade e o Átomo</h2>
+      <p class="cc-sub">Thomson, os raios catódicos e a descoberta do elétron.</p>
+      <span class="cc-start-hint"><span class="dot"></span> toque na tela ou use o passador para avançar</span>
+    </article>
+  </section>
+
+  <!-- ░░░░░░░░░░ CAPÍTULO V ░░░░░░░░░░ -->
+  <section class="chapter theme-5" id="cap-5" data-roman="V" data-title="O modelo de Rutherford">
+    <article class="slide chapter-cover current">
+      <div class="atom spin cc-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+        <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+      <div class="cc-roman">Capítulo V</div>
+      <h2 class="cc-title">O modelo de Rutherford</h2>
+      <p class="cc-sub">O núcleo atômico e o experimento da folha de ouro.</p>
+      <span class="cc-start-hint"><span class="dot"></span> toque na tela ou use o passador para avançar</span>
+    </article>
+  </section>
+
+  <!-- ░░░░░░░░░░ CAPÍTULO VI ░░░░░░░░░░ -->
+  <section class="chapter theme-6" id="cap-6" data-roman="VI" data-title="O espectro atômico e o Modelo de Bohr">
+    <article class="slide chapter-cover current">
+      <div class="atom spin cc-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+        <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+      <div class="cc-roman">Capítulo VI</div>
+      <h2 class="cc-title">O espectro atômico e o Modelo de Bohr</h2>
+      <p class="cc-sub">Luz, energia e os níveis quânticos dos elétrons.</p>
+      <span class="cc-start-hint"><span class="dot"></span> toque na tela ou use o passador para avançar</span>
+    </article>
+  </section>
+
+  <!-- chrome compartilhado dos capítulos (preenchido por JS) -->
+  <div class="progress" id="progress"></div>
+  <div class="bar" id="bar">
+    <button class="back" id="btnBack">← Capítulos</button>
+    <div class="spacer"></div>
+    <div class="counter" id="counter">1 / 1</div>
+  </div>
+  <button class="help-btn" id="btnHelp" title="Controles">?</button>
+  <button class="nav-arrow prev" id="btnPrev" aria-label="Anterior">‹</button>
+  <button class="nav-arrow next" id="btnNext" aria-label="Próximo">Próximo →</button>
+  <div class="slide-dots" id="slideDots"></div>
+  <div class="end-flag" id="endFlag">fim do capítulo</div>
+</div>
+
+<!-- overlay de ajuda -->
+<div id="help">
+  <div class="help-card">
+    <h3>Como controlar</h3>
+    <p>Funciona com toque (tablet/Chromebook), mouse e passadores/canetas Bluetooth.</p>
+    <div class="row"><span>Próximo evento / slide</span><span>Toque · Deslizar ← · <kbd>→</kbd><kbd>Espaço</kbd><kbd>PgDn</kbd></span></div>
+    <div class="row"><span>Voltar</span><span>Deslizar → · <kbd>←</kbd><kbd>PgUp</kbd></span></div>
+    <div class="row"><span>Eventos interativos</span><span>tocar/arrastar o elemento</span></div>
+    <div class="row"><span>Sair do capítulo</span><span><kbd>Esc</kbd></span></div>
+    <button class="close" onclick="document.getElementById('help').classList.remove('open')">Entendi</button>
+  </div>
+</div>
+
+<!-- "ver dentro do lab" — zoom com fundo borrado/escuro -->
+<div id="labView" class="lab-view" aria-hidden="true">
+  <button class="lab-view-close" id="labViewClose" aria-label="Fechar">✕</button>
+  <div class="lab-view-stage">
+    <img class="lab-view-img" id="labViewImg" src="imagens/lab_chem.jpeg" alt="Dentro do laboratório">
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   7. LÓGICA DO APP
+   ============================================================ */
+(() => {
+  "use strict";
+  const $  = (s, r=document) => r.querySelector(s);
+  const $$ = (s, r=document) => [...r.querySelectorAll(s)];
+  // vibração tátil (tablets/Chromebooks que suportam) — ignorado nos demais
+  const vibe = p => { if (navigator.vibrate){ try{ navigator.vibrate(p); }catch(_){} } };
+
+  /* ---------- dados dos capítulos (para o baralho) ---------- */
+  const CHAPTERS = [
+    {id:"cap-1", roman:"I",  cap:"Capítulo I",   title:"Introdução à Química",                 desc:"Os primeiros passos no estudo da matéria.",        theme:"theme-1"},
+    {id:"cap-2", roman:"II", cap:"Capítulo II",  title:"A gênese do átomo",                    desc:"Das ideias gregas à partícula indivisível.",       theme:"theme-2"},
+    {id:"cap-3", roman:"III",cap:"Capítulo III", title:"O átomo e a Ciência",                  desc:"O método científico e o modelo de Dalton.",        theme:"theme-3"},
+    {id:"cap-4", roman:"IV", cap:"Capítulo IV",  title:"A Eletricidade e o Átomo",             desc:"Thomson e a descoberta do elétron.",               theme:"theme-4"},
+    {id:"cap-5", roman:"V",  cap:"Capítulo V",   title:"O modelo de Rutherford",               desc:"O núcleo e o experimento da folha de ouro.",       theme:"theme-5"},
+    {id:"cap-6", roman:"VI", cap:"Capítulo VI",  title:"O espectro atômico e o Modelo de Bohr",desc:"Luz, energia e os níveis quânticos.",              theme:"theme-6"},
+  ];
+
+  /* ---------- estado global ---------- */
+  let mode = "cover";              // 'cover' | 'deck' | 'chapter'
+  const views = {cover:$("#cover"), deck:$("#deck")};
+
+  function showView(name){
+    Object.values(views).forEach(v => v.classList.remove("active"));
+    if (views[name]) views[name].classList.add("active");
+  }
+
+  /* ============================================================
+     FUNDO ATÔMICO (canvas) — partículas com leve conexão
+     ============================================================ */
+  (function bg(){
+    const c = $("#bg"), x = c.getContext("2d");
+    let w,h,pts,raf;
+    const N = 46;
+    function size(){ w=c.width=innerWidth*devicePixelRatio; h=c.height=innerHeight*devicePixelRatio; }
+    function init(){ pts=[...Array(N)].map(()=>({x:Math.random()*w,y:Math.random()*h,vx:(Math.random()-.5)*.18*devicePixelRatio,vy:(Math.random()-.5)*.18*devicePixelRatio})); }
+    function loop(){
+      x.clearRect(0,0,w,h);
+      for(const p of pts){ p.x+=p.vx; p.y+=p.vy; if(p.x<0||p.x>w)p.vx*=-1; if(p.y<0||p.y>h)p.vy*=-1; }
+      for(let i=0;i<N;i++){ for(let j=i+1;j<N;j++){
+        const a=pts[i],b=pts[j],d=Math.hypot(a.x-b.x,a.y-b.y), max=130*devicePixelRatio;
+        if(d<max){ x.strokeStyle="rgba(120,170,255,"+(.10*(1-d/max))+")"; x.lineWidth=devicePixelRatio; x.beginPath(); x.moveTo(a.x,a.y); x.lineTo(b.x,b.y); x.stroke(); }
+      }}
+      for(const p of pts){ x.fillStyle="rgba(160,200,255,.5)"; x.beginPath(); x.arc(p.x,p.y,1.4*devicePixelRatio,0,7); x.fill(); }
+      raf=requestAnimationFrame(loop);
+    }
+    function start(){ size(); init(); cancelAnimationFrame(raf); loop(); }
+    addEventListener("resize", start); start();
+    if (matchMedia("(prefers-reduced-motion:reduce)").matches){ cancelAnimationFrame(raf); }
+  })();
+
+  /* ============================================================
+     CAPA → BARALHO
+     ============================================================ */
+  $("#btnStart").addEventListener("click", () => { mode="deck"; showView("deck"); deck.layout(); });
+
+  /* ============================================================
+     BARALHO DE CARTAS (coverflow arrastável)
+     ============================================================ */
+  const deck = (() => {
+    const stage = $("#deckStage"), wrap = $("#cards"), dotsEl = $("#deckDots");
+    let current = 0, dragX = 0, dragging = false, startX = 0, startY = 0, moved = 0, els = [];
+    const SPACING = () => Math.min(innerWidth*0.62, 300);
+
+    function build(){
+      wrap.innerHTML = ""; dotsEl.innerHTML = "";
+      els = CHAPTERS.map((ch,i) => {
+        const card = document.createElement("div");
+        card.className = "card " + ch.theme;
+        card.dataset.index = i;
+        card.innerHTML = `
+          <div class="card-accent"></div>
+          <div class="card-roman">${ch.roman}</div>
+          <div class="atom spin card-atom"><div class="orbit"></div><div class="orbit"></div><div class="orbit"></div>
+            <div class="electron e1"></div><div class="electron e2"></div><div class="electron e3"></div><div class="nucleus"></div></div>
+          <div class="card-body">
+            <div class="card-cap">${ch.cap}</div>
+            <div class="card-title">${ch.title}</div>
+            <div class="card-desc">${ch.desc}</div>
+            <button class="card-enter" data-enter>Entrar →</button>
+          </div>`;
+        card.querySelector("[data-enter]").addEventListener("click", e => { e.stopPropagation(); openChapter(i); });
+        wrap.appendChild(card);
+
+        const dot = document.createElement("button");
+        dot.addEventListener("click", () => { current = i; render(true); });
+        dotsEl.appendChild(dot);
+        return card;
+      });
+    }
+
+    function render(animate){
+      const sp = SPACING();
+      const virtual = current - dragX/sp;
+      els.forEach((el,i) => {
+        const rel = i - virtual;
+        const ar = Math.abs(rel);
+        const tx = rel * sp;
+        const rot = Math.max(-32, Math.min(32, -rel*22));
+        const tz = -ar*140;
+        const sc = Math.max(.7, 1 - ar*0.12);
+        el.style.transition = animate ? "transform .5s var(--ease),opacity .5s var(--ease)" : "none";
+        el.style.transform = `translate(-50%,-50%) translateX(${tx}px) translateZ(${tz}px) rotateY(${rot}deg) scale(${sc})`;
+        el.style.zIndex = String(100 - Math.round(ar*10));
+        el.style.opacity = ar > 2.4 ? "0" : "1";
+        el.classList.toggle("is-center", Math.round(virtual) === i);
+      });
+      $$("button", dotsEl).forEach((d,i) => d.classList.toggle("on", i === current));
+    }
+
+    function onDown(e){ dragging = true; dragX = 0; moved = 0; startX = e.clientX; startY = e.clientY; wrap.style.cursor="grabbing"; stage.setPointerCapture?.(e.pointerId); }
+    function onMove(e){ if(!dragging) return; dragX = e.clientX - startX; moved = Math.max(moved, Math.abs(dragX)); render(false); }
+    function onUp(e){
+      if(!dragging) return; dragging = false; wrap.style.cursor="grab";
+      const sp = SPACING();
+      if (Math.abs(dragX) > sp*0.18){
+        current += dragX < 0 ? 1 : -1;
+        current = Math.max(0, Math.min(CHAPTERS.length-1, current));
+      } else if (moved < 8){
+        // toque: abrir carta central
+        const card = e.target.closest?.(".card");
+        if (card && card.classList.contains("is-center")) openChapter(current);
+      }
+      dragX = 0; render(true);
+    }
+
+    stage.addEventListener("pointerdown", onDown);
+    stage.addEventListener("pointermove", onMove);
+    stage.addEventListener("pointerup", onUp);
+    stage.addEventListener("pointercancel", onUp);
+
+    function move(dir){ current = Math.max(0, Math.min(CHAPTERS.length-1, current+dir)); render(true); }
+
+    build();
+    addEventListener("resize", () => { if(mode==="deck") render(true); });
+    return { layout:()=>render(true), move, open:()=>openChapter(current), get current(){return current;} };
+  })();
+
+  /* ============================================================
+     MOTOR DE SLIDES
+     ============================================================ */
+  let activeChapter = null;   // <section.chapter>
+  let slides = [];            // article.slide do capítulo atual
+  let si = 0;                 // índice do slide atual
+  let fi = 0;                 // fragmentos revelados no slide atual
+
+  const progress = $("#progress"), counter = $("#counter"),
+        slideDots = $("#slideDots"), endFlag = $("#endFlag"),
+        btnPrev = $("#btnPrev"), btnNext = $("#btnNext");
+
+  function frags(slide){ return $$(".fragment", slide).filter(f => f.closest(".slide") === slide); }
+
+  function openChapter(index){
+    const ch = CHAPTERS[index];
+    activeChapter = $("#"+ch.id);
+    document.documentElement.style.setProperty("color-scheme","dark");
+    // herda a paleta do capítulo no chrome compartilhado
+    $("#chapters").className = ch.theme;
+    activeChapter.classList.add("active");
+    slides = $$(".slide", activeChapter);
+    // entra sem transição de push: zera estados de slide
+    slides.forEach(s => { s.classList.remove("current","leaving"); s.style.transition="none"; s.style.transform="translateX(0)"; });
+    si = 0; gotoSlide(0, false);
+    mode = "chapter";
+    showView(null);
+    document.body.classList.add("in-chapter");
+  }
+
+  function closeChapter(){
+    const lv = document.getElementById("labView"); if (lv) lv.classList.remove("open");
+    if (activeChapter) activeChapter.classList.remove("active");
+    activeChapter = null; mode = "deck";
+    document.body.classList.remove("in-chapter");
+    showView("deck"); deck.layout();
+  }
+
+  function buildDots(){
+    slideDots.innerHTML = "";
+    slides.forEach((_,i) => { const d=document.createElement("i"); if(i===si)d.classList.add("on"); slideDots.appendChild(d); });
+  }
+
+  // TRANSIÇÃO: página atual desliza para a esquerda e a nova encaixa vindo da direita
+  function slideInFrom(el, forward){
+    el.classList.add("current");
+    el.style.transition = "none";
+    el.style.transform = `translateX(${forward ? 100 : -100}%)`;
+    el.getBoundingClientRect();                       // reflow
+    requestAnimationFrame(() => {
+      el.style.transition = "transform .25s var(--ease)";
+      el.style.transform = "translateX(0)";
+    });
+  }
+  function slideOutTo(el, forward){
+    el.classList.remove("current");
+    el.classList.add("leaving");
+    el.style.transition = "transform .25s var(--ease)";
+    el.style.transform = `translateX(${forward ? -100 : 100}%)`;
+    const done = () => { el.classList.remove("leaving"); el.style.transition="none"; el.style.transform="translateX(0)"; el.removeEventListener("transitionend", done); clearTimeout(tm); };
+    el.addEventListener("transitionend", done);
+    const tm = setTimeout(done, 380);                 // fallback
+  }
+
+  function gotoSlide(n, revealAll){
+    const target = Math.max(0, Math.min(slides.length-1, n));
+    const prevIndex = si;
+    const prevSlide = slides.find(s => s.classList.contains("current"));
+    const slide = slides[target];
+    const forward = target >= prevIndex;
+
+    if (prevSlide && prevSlide !== slide){
+      slideOutTo(prevSlide, forward);                 // antiga sai para a esquerda (ou direita ao voltar)
+      slideInFrom(slide, forward);                    // nova encaixa vindo da direita (ou esquerda)
+    } else {
+      slide.classList.add("current");                 // 1ª exibição: sem push
+      slide.style.transition = "none"; slide.style.transform = "translateX(0)";
+    }
+
+    si = target;
+    const fr = frags(slide);
+    // ao entrar num slide: nada revelado (avançando) ou tudo (ao voltar)
+    fr.forEach(f => f.classList.remove("revealed"));
+    fi = 0;
+    if (revealAll){ fr.forEach(f => f.classList.add("revealed")); fi = fr.length; }
+    syncChrome();
+    markInteractives(slide);
+    // habilita arrastar + pinça em qualquer elemento marcado com data-manip
+    $$("[data-manip]", slide).forEach(el => enableGestures(el));
+    // avisa o slide para (re)iniciar suas interações personalizadas
+    slide.dispatchEvent(new CustomEvent("slideenter",{bubbles:true}));
+  }
+
+  function syncChrome(){
+    buildDots();
+    counter.textContent = (si+1) + " / " + slides.length;
+    const total = Math.max(1, slides.length-1);
+    progress.style.width = (si/total*100) + "%";
+    btnPrev.disabled = (si===0 && fi===0);
+    const last = (si===slides.length-1) && (fi>=frags(slides[si]).length);
+    btnNext.disabled = last;
+    endFlag.classList.toggle("show", last && slides.length > 1 && !slides[si].hasAttribute("data-noend"));
+  }
+
+  // destaca elementos interativos do slide que ainda não foram tocados
+  function markInteractives(slide){
+    $$("[data-interactive]", slide).forEach(el => {
+      if (el.dataset.done !== "true" && !el.hasAttribute("data-nohint")) el.classList.add("needs-touch");
+    });
+  }
+
+  /* ---- AVANÇAR: revela próximo EVENTO NÃO INTERATIVO ou vai ao próx. slide ---- */
+  function next(){
+    if (!activeChapter) return;
+    const slide = slides[si];
+    const fr = frags(slide);
+    // trava se o passo atual é interativo com data-gate ainda não concluído
+    const lastRevealed = fr[fi-1];
+    if (lastRevealed && lastRevealed.hasAttribute("data-gate") && lastRevealed.dataset.done !== "true"){
+      pulse(lastRevealed); return;
+    }
+    if (fi < fr.length){
+      fr[fi].classList.add("revealed");
+      fi++;
+      syncChrome(); vibe(12);
+    } else if (si < slides.length-1){
+      gotoSlide(si+1, false); vibe(16);
+    }
+  }
+
+  /* ---- VOLTAR ---- */
+  function prev(){
+    if (!activeChapter) return;
+    const fr = frags(slides[si]);
+    if (fi > 0){
+      fi--;
+      fr[fi].classList.remove("revealed");
+      syncChrome(); vibe(10);
+    } else if (si > 0){
+      gotoSlide(si-1, true); vibe(12);  // volta ao slide anterior já completo
+    }
+  }
+
+  function pulse(el){ el.style.transition="transform .12s"; el.style.transform="scale(1.05)"; setTimeout(()=>{el.style.transform="";},130); }
+
+  btnNext.addEventListener("click", next);
+  btnPrev.addEventListener("click", prev);
+  $("#btnBack").addEventListener("click", closeChapter);
+  $("#btnHelp").addEventListener("click", () => $("#help").classList.add("open"));
+
+  /* ============================================================
+     GESTOS UNIVERSAIS — arrastar (1 dedo) + pinça p/ redimensionar (2 dedos)
+     Aplica-se a qualquer elemento (textos, imagens, vídeos, ...).
+     Uso: Slides.manip(el, {enabled, onTap, onDrop, minScale, maxScale})
+          ou marque o elemento com  data-manip  (aplicado automaticamente).
+     Mantém el._dx, el._dy (deslocamento) e el._scale (zoom).
+     ============================================================ */
+  function enableGestures(el, opts){
+    if (el._manip) return; el._manip = true;
+    opts = opts || {};
+    el._dx = el._dx||0; el._dy = el._dy||0; el._scale = el._scale||1;
+    el.style.touchAction = "none";
+    el.style.animation = "none";              // evita que animações CSS sobreponham o transform inline
+    const ptrs = new Map();
+    let base = {dx:0,dy:0,scale:1}, startDist=0, startMid={x:0,y:0}, startSingle={x:0,y:0};
+    let moved=0, pinched=false, downX=0, downY=0;
+    const MIN = opts.minScale || 0.35, MAX = opts.maxScale || 5;
+
+    const apply = () => { el.style.transform = `translate(${el._dx}px,${el._dy}px) scale(${el._scale})`; };
+    const two = () => { const a=[...ptrs.values()]; return [a[0],a[1]]; };
+    function rebaseline(){
+      base = {dx:el._dx, dy:el._dy, scale:el._scale};
+      if (ptrs.size>=2){ const [p0,p1]=two();
+        startDist = Math.hypot(p0.x-p1.x,p0.y-p1.y)||1;
+        startMid = {x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2};
+      } else if (ptrs.size===1){ const p=[...ptrs.values()][0]; startSingle={x:p.x,y:p.y}; }
+    }
+    el.addEventListener("pointerdown", e=>{
+      if (opts.enabled && !opts.enabled()) return;
+      ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      try{ el.setPointerCapture(e.pointerId); }catch(_){}
+      if (ptrs.size===1){ moved=0; pinched=false; downX=e.clientX; downY=e.clientY; el.style.transition="none"; }
+      if (ptrs.size===2){ pinched=true; }
+      rebaseline();
+      e.stopPropagation();
+    });
+    el.addEventListener("pointermove", e=>{
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.set(e.pointerId, {x:e.clientX, y:e.clientY});
+      if (ptrs.size>=2){
+        const [p0,p1]=two();
+        const dist = Math.hypot(p0.x-p1.x, p0.y-p1.y)||1;
+        const mid = {x:(p0.x+p1.x)/2, y:(p0.y+p1.y)/2};
+        el._scale = Math.min(MAX, Math.max(MIN, base.scale * dist/startDist));
+        el._dx = base.dx + (mid.x - startMid.x);
+        el._dy = base.dy + (mid.y - startMid.y);
+        apply();
+      } else if (ptrs.size===1){
+        const p=[...ptrs.values()][0];
+        el._dx = base.dx + (p.x - startSingle.x);
+        el._dy = base.dy + (p.y - startSingle.y);
+        moved = Math.hypot(e.clientX-downX, e.clientY-downY);
+        apply();
+      }
+      e.stopPropagation();
+    });
+    function up(e){
+      if (!ptrs.has(e.pointerId)) return;
+      ptrs.delete(e.pointerId);
+      try{ el.releasePointerCapture(e.pointerId); }catch(_){}
+      if (ptrs.size===0){
+        if (pinched){ /* foi pinça: não conta como toque nem solta */ }
+        else if (moved < 8){ opts.onTap && opts.onTap(); }
+        else { opts.onDrop && opts.onDrop(); }
+      } else {
+        rebaseline();                          // continua com o(s) dedo(s) restante(s)
+      }
+      e.stopPropagation();
+    }
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    return el;
+  }
+
+  /* ---- API pública para os EVENTOS INTERATIVOS ---- */
+  window.Slides = {
+    // marque a interação como concluída (libera o data-gate e o destaque)
+    done(el){ if(!el) return; el.dataset.done="true"; el.classList.remove("needs-touch"); },
+    next, prev,
+    goto(n){ gotoSlide(n,true); },
+    manip: enableGestures,              // habilita arrastar + pinça em qualquer elemento
+    vibe                                // vibração tátil (ms ou padrão); vibe(0) cancela
+  };
+
+  /* ============================================================
+     ENTRADAS: teclado (passador/caneta BT), toque e deslize
+     ============================================================ */
+  // Passadores e canetas Bluetooth se comportam como teclado:
+  const NEXT_KEYS = ["ArrowRight","ArrowDown","PageDown"," ","Spacebar","Enter","n","N"];
+  const PREV_KEYS = ["ArrowLeft","ArrowUp","PageUp","Backspace","p","P","b","B"];
+
+  addEventListener("keydown", e => {
+    if (mode === "deck"){
+      if (e.key==="ArrowRight"||e.key==="PageDown"){ deck.move(1); e.preventDefault(); }
+      else if (e.key==="ArrowLeft"||e.key==="PageUp"){ deck.move(-1); e.preventDefault(); }
+      else if (e.key==="Enter"||e.key===" "){ deck.open(); e.preventDefault(); }
+      return;
+    }
+    if (mode === "chapter"){
+      if (e.key === "Escape"){ closeChapter(); e.preventDefault(); return; }
+      if (NEXT_KEYS.includes(e.key)){ next(); e.preventDefault(); }
+      else if (PREV_KEYS.includes(e.key)){ prev(); e.preventDefault(); }
+    }
+  });
+
+  // delegação de gestos em toda a área dos capítulos (exceto controles e interativos)
+  (function gestures(){
+    const area = $("#chapters");
+    let sx=0, sy=0, st=0, tracking=false;
+    area.addEventListener("pointerdown", e => {
+      if (mode!=="chapter") return;
+      if (e.target.closest("button,a,[data-interactive],.bar,.nav-arrow,.slide-dots,#help")) { tracking=false; return; }
+      tracking=true; sx=e.clientX; sy=e.clientY; st=Date.now();
+    });
+    area.addEventListener("pointerup", e => {
+      if (!tracking || mode!=="chapter") return; tracking=false;
+      const dx=e.clientX-sx, dy=e.clientY-sy, dt=Date.now()-st;
+      if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy)){       // deslize horizontal
+        dx < 0 ? next() : prev();
+      } else if (Math.abs(dx) < 12 && Math.abs(dy) < 12 && dt < 400){ // toque = avançar
+        next();
+      }
+    });
+  })();
+
+  /* ---- atalhos de URL (úteis ao montar slides): ?deck  ·  ?cap=3 ---- */
+  (function deepLink(){
+    const p = new URLSearchParams(location.search);
+    if (p.has("cap")){
+      const n = (parseInt(p.get("cap"),10) || 1) - 1;
+      mode="deck"; showView("deck"); deck.layout();
+      if (n >= 0 && n < CHAPTERS.length) openChapter(n);
+    } else if (p.has("deck")){
+      mode="deck"; showView("deck"); deck.layout();
+    }
+  })();
+
+})();
+</script>
+
+<script>
+/* ============================================================
+   INTERAÇÕES — CAPÍTULO I · SLIDE 1
+   (a "Ciência" entra como evento NÃO interativo;
+    os toques na caixa são eventos INTERATIVOS)
+   ============================================================ */
+(() => {
+  const block = document.getElementById("qBlock");
+  if (!block) return;
+  const chip = document.getElementById("ciChip");
+  const defs = [...document.querySelectorAll("#ciDefs .ci-def")];
+  const carousel = document.getElementById("ciCarousel");
+  const track = document.getElementById("ciTrack");
+  const cards = [...track.children];
+
+  let chipOut = false, carOut = false, shown = 0, phase = "reveal";
+  let cur = 0, cdx = 0;
+
+  /* ---------- carrossel coverflow ---------- */
+  const cspan = () => Math.min((track.clientWidth || 600) * 0.46, 240);
+  function renderCar(animate){
+    const sp = cspan(), v = cur - cdx/sp;
+    cards.forEach((el,i) => {
+      const rel = i - v, ar = Math.abs(rel);
+      el.style.transition = animate ? "transform .45s var(--ease),opacity .45s var(--ease)" : "none";
+      el.style.transform = `translate(-50%,-50%) translateX(${rel*sp}px) translateZ(${-ar*120}px) rotateY(${Math.max(-30,Math.min(30,-rel*20))}deg) scale(${Math.max(.72,1-ar*0.12)})`;
+      el.style.zIndex = String(100 - Math.round(ar*10));
+      el.style.opacity = ar > 1.6 ? "0" : "1";
+    });
+  }
+
+  /* ---------- helpers de posição/animação ---------- */
+  function centerDelta(el, target){ const r=el.getBoundingClientRect(), t=target.getBoundingClientRect();
+    return { x:(t.left+t.width/2)-(r.left+r.width/2), y:(t.top+t.height/2)-(r.top+r.height/2) }; }
+  function overlaps(el, target){ const a=el.getBoundingClientRect(), b=target.getBoundingClientRect();
+    return !(a.right<b.left||a.left>b.right||a.bottom<b.top||a.top>b.bottom); }
+  function hitBlock(){ block.classList.remove("hit"); void block.offsetWidth; block.classList.add("hit"); Slides.vibe(20); }
+
+  // sai de dentro de "src" até a posição natural do elemento.
+  // offX/offY: deslocamento final (p/ as definições acompanharem o chip onde ele estiver)
+  function emergeFrom(el, src, cls, offX=0, offY=0){
+    el.style.transition="none"; el._dx=offX; el._dy=offY; el._scale=1; el.style.transform=`translate(${offX}px,${offY}px)`; el.classList.add(cls);
+    const d=centerDelta(el, src);
+    el.style.transform=`translate(${offX+d.x}px,${offY+d.y}px) scale(.3)`; el.style.opacity="0";
+    el.getBoundingClientRect();                 // reflow
+    el.style.transition="transform .55s var(--ease),opacity .45s var(--ease)";
+    el.style.transform=`translate(${offX}px,${offY}px) scale(1)`; el.style.opacity="1";
+  }
+  // recolhe "el" para dentro de "target", a partir de onde estiver
+  function flyInto(el, target, done){
+    const d=centerDelta(el, target), bx=(el._dx||0)+d.x, by=(el._dy||0)+d.y;
+    el.style.transition="transform .42s var(--ease),opacity .38s var(--ease)";
+    el.style.transform=`translate(${bx}px,${by}px) scale(.2)`; el.style.opacity="0";
+    setTimeout(()=>done&&done(), 420);
+  }
+  function resetEl(el){ el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; }
+
+  /* arraste + pinça são fornecidos por Slides.manip (definido no motor) */
+
+  /* ---------- tocar em "Ciência": revela e recolhe as definições UMA A UMA ---------- */
+  function tapCiencia(){
+    Slides.vibe(12);
+    if (phase === "reveal"){
+      // as definições saem do chip e ficam logo ao lado dele, onde quer que ele esteja
+      emergeFrom(defs[shown], chip, "show", chip._dx||0, chip._dy||0);
+      shown++;
+      if (shown === defs.length) phase = "retract";
+    } else {
+      shown--;
+      const d = defs[shown];
+      flyInto(d, chip, () => { d.classList.remove("show"); resetEl(d); });  // volta pro chip de onde estiver
+      if (shown === 0) phase = "reveal";
+    }
+  }
+  function hideCiencia(){                               // chip solto sobre o bloco => recolhe tudo
+    defs.forEach(d => { if (d.classList.contains("show")) flyInto(d, block, () => { d.classList.remove("show"); resetEl(d); }); });
+    flyInto(chip, block, () => { chip.classList.remove("out"); resetEl(chip); chipOut=false; shown=0; phase="reveal"; });
+  }
+
+  // chip e cada definição: arrastar (1 dedo) + pinça p/ redimensionar (2 dedos), independentes
+  Slides.manip(chip, { enabled:()=>chipOut, onTap:tapCiencia, onDrop:()=>{ if (overlaps(chip, block)) hideCiencia(); } });
+  defs.forEach(d => Slides.manip(d, { enabled:()=>d.classList.contains("show") }));
+
+  /* ---------- clicar no bloco: 1º => "Ciência"; 2º => carrossel ---------- */
+  block.addEventListener("click", e => {
+    e.stopPropagation(); hitBlock();
+    if (!chipOut){ chipOut=true; emergeFrom(chip, block, "out"); }
+    else if (!carOut){ carOut=true; cur=0; cdx=0; renderCar(false); emergeFrom(carousel, block, "out"); }
+  });
+
+  /* ---------- carrossel: 1 dedo troca imagem / empurra p/ direita recolhe; 2 dedos = pinça (zoom) ---------- */
+  let cDrag=false, csx=0;
+  const cptrs=new Map(); let cPinch=false, cStartDist=0, cBaseScale=1;
+  carousel._scale = carousel._scale||1;
+  const cApply = () => { carousel.style.transform = `translate(0,0) scale(${carousel._scale})`; };
+  carousel.addEventListener("pointerdown", e => {
+    cptrs.set(e.pointerId,{x:e.clientX,y:e.clientY}); try{carousel.setPointerCapture(e.pointerId)}catch(_){}
+    if (cptrs.size===1){ cDrag=true; cdx=0; csx=e.clientX; }
+    else if (cptrs.size===2){ cDrag=false; cPinch=true; const a=[...cptrs.values()];
+      cStartDist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1; cBaseScale=carousel._scale; }
+    e.stopPropagation();
+  });
+  carousel.addEventListener("pointermove", e => {
+    if(!cptrs.has(e.pointerId)) return; cptrs.set(e.pointerId,{x:e.clientX,y:e.clientY});
+    if (cptrs.size>=2 && cPinch){ const a=[...cptrs.values()];
+      const dist=Math.hypot(a[0].x-a[1].x,a[0].y-a[1].y)||1;
+      carousel._scale=Math.min(4,Math.max(.4,cBaseScale*dist/cStartDist)); cApply();
+    } else if (cDrag){ cdx=e.clientX-csx; renderCar(false); }
+    e.stopPropagation();
+  });
+  function cup(e){
+    if(!cptrs.has(e.pointerId)) return; cptrs.delete(e.pointerId);
+    try{carousel.releasePointerCapture(e.pointerId)}catch(_){}
+    if (cptrs.size>=2){ e.stopPropagation(); return; }                 // segue em pinça
+    if (cptrs.size===1){ cPinch=false; cDrag=true; cdx=0; csx=[...cptrs.values()][0].x; e.stopPropagation(); return; }
+    if (cPinch){ cPinch=false; }                                       // terminou pinça (sem swipe)
+    else if (cDrag){ const sp=cspan();
+      if (cur===0 && cdx>sp*0.2){ retractCarousel(); }                 // empurrou p/ direita na pedra
+      else if (Math.abs(cdx)>sp*0.2){ cur+=cdx<0?1:-1; cur=Math.max(0,Math.min(cards.length-1,cur)); cdx=0; renderCar(true); Slides.vibe(10); }
+      else { cdx=0; renderCar(true); }
+    }
+    cDrag=false; e.stopPropagation();
+  }
+  carousel.addEventListener("pointerup", cup);
+  carousel.addEventListener("pointercancel", cup);
+
+  function retractCarousel(){
+    cdx=0; renderCar(false);
+    flyInto(carousel, block, () => { carousel.classList.remove("out"); resetEl(carousel); carOut=false; cur=0; renderCar(false); });
+  }
+
+  /* ---------- reinicia ao (re)entrar no slide ---------- */
+  function reset(){
+    chipOut=false; carOut=false; shown=0; phase="reveal"; cur=0; cdx=0;
+    [chip, carousel].concat(defs).forEach(el => { el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
+    chip.classList.remove("out"); carousel.classList.remove("out"); defs.forEach(d => d.classList.remove("show"));
+    renderCar(false);
+  }
+  document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
+  renderCar(false);
+})();
+</script>
+
+<script>
+/* ============================================================
+   INTERAÇÕES — CAPÍTULO I · SLIDE 2 (As Reações Químicas)
+   Bloco "?": 1º clique => "lab" (cresce e para no centro);
+   próximos => minério1, 2, 3 (borda esquerda, empilhados).
+   Tudo arrastável + pinça; arrastar de volta ao bloco esconde;
+   clicar no bloco faz sair de novo.
+   ============================================================ */
+(() => {
+  const block = document.getElementById("qBlock2");
+  if (!block) return;
+  const lab = document.getElementById("s2lab");
+  const labHost = document.getElementById("s2labHost");
+  const fx = document.getElementById("s2fx");
+  const labwrap = document.querySelector("#cap-1 .s2-labwrap");
+  const def = document.getElementById("s2def");
+  const mins = [...document.querySelectorAll("#cap-1 .s2-min")];
+  const results = ["s2res1","s2res2","s2res3"].map(id => document.getElementById(id));
+  const items = [def, lab, ...mins];            // emergem do bloco, nessa ordem (texto primeiro)
+  const SMOKE = ["#dbeafe", "#fb923c", "#fcd34d"];   // fumaça: alumínio / ferro / cobre
+
+  const centerDelta = (el,t) => { const r=el.getBoundingClientRect(), b=t.getBoundingClientRect();
+    return { x:(b.left+b.width/2)-(r.left+r.width/2), y:(b.top+b.height/2)-(r.top+r.height/2) }; };
+  const overlaps = (el,t) => { const a=el.getBoundingClientRect(), b=t.getBoundingClientRect();
+    return !(a.right<b.left||a.left>b.right||a.bottom<b.top||a.top>b.bottom); };
+  const hitBlock = () => { block.classList.remove("hit"); void block.offsetWidth; block.classList.add("hit"); Slides.vibe(20); };
+
+  function emergeFrom(el, src){                  // sai do bloco/lab, pequeno, cresce até a posição natural
+    el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform="translate(0,0)"; el.classList.add("out");
+    const d=centerDelta(el, src);
+    el.style.transform=`translate(${d.x}px,${d.y}px) scale(.22)`; el.style.opacity="0";
+    el.getBoundingClientRect();
+    el.style.transition="transform .55s var(--ease),opacity .45s var(--ease)";
+    el.style.transform="translate(0,0) scale(1)"; el.style.opacity="1";
+  }
+  function flyInto(el, target, done){            // entra para dentro do alvo (bloco ou lab)
+    const d=centerDelta(el, target), bx=(el._dx||0)+d.x, by=(el._dy||0)+d.y;
+    el.style.transition="transform .42s var(--ease),opacity .38s var(--ease)";
+    el.style.transform=`translate(${bx}px,${by}px) scale(.15)`; el.style.opacity="0";
+    setTimeout(()=>done&&done(), 420);
+  }
+  function resetEl(el){ el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; }
+
+  function emergeItem(it){ it._out = true; emergeFrom(it, block); }
+  function hideItem(it){ flyInto(it, block, () => { it.classList.remove("out"); resetEl(it); it._out = false; }); }
+
+  /* ---- "ver dentro do lab": toque no lab => zoom com fundo borrado/escuro ---- */
+  const labView = document.getElementById("labView");
+  const labStage = labView.querySelector(".lab-view-stage");
+  const labViewImg = document.getElementById("labViewImg");
+  Slides.manip(labViewImg, { minScale:.5, maxScale:6 });          // zoom in/out por pinça (e arrastar)
+  function openLabView(){
+    // reinicia o zoom/posição do usuário a cada abertura
+    labViewImg.style.transition="none"; labViewImg._dx=0; labViewImg._dy=0; labViewImg._scale=1; labViewImg.style.transform="translate(0,0) scale(1)";
+    labView.classList.add("open");
+    labView.style.animation=""; labStage.style.animation="";      // (re)dispara o zoom-in via CSS
+  }
+  function closeLabView(){
+    labView.style.animation="labViewOut .32s var(--ease) forwards";
+    labStage.style.animation="labZoomOut .32s var(--ease) forwards";
+    setTimeout(()=>{ labView.classList.remove("open"); labView.style.animation=""; labStage.style.animation=""; }, 320);
+  }
+  document.getElementById("labViewClose").addEventListener("click", closeLabView);
+  labView.addEventListener("click", e => { if (e.target === labView) closeLabView(); });   // toque no fundo fecha
+
+  /* ---- arraste + pinça ---- */
+  Slides.manip(def, { enabled:()=>def._out, onDrop:()=>{ if (overlaps(def, block)) hideItem(def); } });
+  Slides.manip(lab, { enabled:()=>lab._out, onTap:openLabView, onDrop:()=>{ if (overlaps(lab, block)) hideItem(lab); } });
+  mins.forEach(min => Slides.manip(min, { enabled:()=>min._out, onDrop:()=>{
+    if (lab._out && overlaps(min, lab)) suckIntoLab(min);          // arrastou até o lab => reação
+    else if (overlaps(min, block)) hideItem(min);                 // arrastou pro bloco => esconde
+  }}));
+  results.forEach(r => Slides.manip(r, { enabled:()=>r._out, onDrop:()=>{ if (overlaps(r, block)) hideItem(r); } }));
+
+  /* ---- a camada de fumaça acompanha o lab (mesmo arrastado ou tremendo) ---- */
+  let smokeRAF = 0;
+  function trackSmoke(){
+    const lr = lab.getBoundingClientRect(), wr = labwrap.getBoundingClientRect();
+    const cx = (lr.left+lr.right)/2 - (wr.left+wr.right)/2;
+    const cy = (lr.top+lr.bottom)/2 - (wr.top+wr.bottom)/2;
+    fx.style.transform = `translate(${cx}px,${cy}px)`;
+    smokeRAF = requestAnimationFrame(trackSmoke);
+  }
+  function startSmokeTracking(){ if (!smokeRAF) trackSmoke(); }
+  function stopSmokeTracking(){ cancelAnimationFrame(smokeRAF); smokeRAF = 0; fx.style.transform = ""; }
+
+  /* ---- sugar o minério para dentro do lab e reagir por 5s ---- */
+  function spawnSmoke(color){
+    const p = document.createElement("span"); p.className = "smoke";
+    p.style.setProperty("--sx", (Math.random()*140-70).toFixed(0)+"px");
+    p.style.setProperty("--sy", (-90 - Math.random()*130).toFixed(0)+"px");
+    const s = 12 + Math.random()*26; p.style.width=s+"px"; p.style.height=s+"px";
+    p.style.background = color; p.style.boxShadow = "0 0 14px "+color;
+    fx.appendChild(p); setTimeout(()=>p.remove(), 1300);
+  }
+  function suckIntoLab(min){
+    const idx = mins.indexOf(min);
+    flyInto(min, lab, () => { min.classList.remove("out"); resetEl(min); min._out = false; });  // sugado p/ dentro
+    min._consumed = true;                                          // transformado: não volta a sair do bloco
+    labHost.classList.add("reacting");                              // tremor + pulso
+    startSmokeTracking();                                          // fumaça segue o lab
+    const color = SMOKE[idx] || "#fff";
+    const spawner = setInterval(() => spawnSmoke(color), 120);      // fumaça colorida
+    setTimeout(() => {                                              // dura 5s
+      clearInterval(spawner);
+      stopSmokeTracking();
+      labHost.classList.remove("reacting");
+      const r = results[idx];
+      if (r && !r._out){ r._out = true; emergeFrom(r, lab); }       // produto sai do lab
+    }, 5000);
+  }
+
+  // cada clique no bloco: sai o próximo item ainda escondido (na ordem)
+  block.addEventListener("click", e => {
+    e.stopPropagation(); hitBlock();
+    // emerge o próximo item ainda escondido — pulando os que já foram transformados
+    const next = items.find(it => !it._out && !it._consumed);
+    if (next) emergeItem(next);
+  });
+
+  function reset(){
+    labView.classList.remove("open"); labView.style.animation=""; labStage.style.animation="";
+    labHost.classList.remove("reacting"); stopSmokeTracking(); fx.innerHTML = "";
+    items.concat(results).forEach(el => { el._out=false; el._consumed=false; el.classList.remove("out"); el.style.transition="none"; el._dx=0; el._dy=0; el._scale=1; el.style.transform=""; el.style.opacity=""; });
+  }
+  document.addEventListener("slideenter", e => { if (e.target && e.target.contains(block)) reset(); });
+})();
+</script>
+</body>
+</html>
